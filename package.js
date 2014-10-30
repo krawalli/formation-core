@@ -16,8 +16,8 @@ Package.onUse( function( api ) {
   api.versionsFrom( 'METEOR@0.9.2.2' );
 
   var both = [ 'client', 'server' ];
-  api.use( [ 'underscore', 'check', 'reactive-var', 'tracker' ], both );
-  api.use( [ 'jparker:crypto-sha256@0.1.0', 'jparker:crypto-hmac@0.1.0', 'jparker:crypto-core@0.1.0', 'jparker:crypto-base64@0.1.0' ], both );
+  api.use([ 'underscore', 'check', 'reactive-var', 'tracker' ], both );
+  api.use([ 'jparker:crypto-sha256@0.1.0', 'jparker:crypto-hmac@0.1.0', 'jparker:crypto-core@0.1.0', 'jparker:crypto-base64@0.1.0' ], both );
 
 
   //// settings and setup ///////////
@@ -53,7 +53,7 @@ Package.onUse( function( api ) {
   api.addFiles( 'validators.js', both );
 
   //// models ///////////////////////
-  api.addFiles( 'models.js', both );
+  api.addFiles( 'model.js', both );
   api.addFiles( 'modelSuper.js', both );
   api.addFiles( 'modelInstance.js', both );
   api.addFiles( 'newModelInstance.js', both );

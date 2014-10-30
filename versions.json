@@ -1,0 +1,55 @@
+{
+  "dependencies": [
+    [
+      "base64",
+      "1.0.1"
+    ],
+    [
+      "check",
+      "1.0.2"
+    ],
+    [
+      "ejson",
+      "1.0.4"
+    ],
+    [
+      "jparker:crypto-base64",
+      "0.1.0"
+    ],
+    [
+      "jparker:crypto-core",
+      "0.1.0"
+    ],
+    [
+      "jparker:crypto-hmac",
+      "0.1.0"
+    ],
+    [
+      "jparker:crypto-sha256",
+      "0.1.0"
+    ],
+    [
+      "json",
+      "1.0.1"
+    ],
+    [
+      "meteor",
+      "1.1.3"
+    ],
+    [
+      "reactive-var",
+      "1.0.3"
+    ],
+    [
+      "tracker",
+      "1.0.3"
+    ],
+    [
+      "underscore",
+      "1.0.1"
+    ]
+  ],
+  "pluginDependencies": [],
+  "toolVersion": "meteor-tool@1.0.35",
+  "format": "1.0"
+}
