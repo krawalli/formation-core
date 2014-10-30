@@ -1,6 +1,6 @@
 Package.describe({
-  name: "quietcreep:formation",
-  summary: "Slender form creation w/ client & server side validation",
+  name: "quietcreep:formation-core",
+  summary: "Core objects for Formation for Meteor",
   version: "1.0.0",
   // git: "http://github.com/quietcreep/meteor-formation"
 });
