@@ -1,7 +1,7 @@
 Formation.Time = function Time( time ){
   var self = this;
 
-  if ( time instanceof Formation.Time ){
+  if ( time.__name__ === "Time" ){
     self.hour = time.hour;
     self.minute = time.minute;
     self.second = time.second;
@@ -51,6 +51,7 @@ Formation.Time = function Time( time ){
 };
 
 Object.defineProperties( Formation.Time.prototype, {
+  __name__: { value: "Time" },
   toString: { value: function(){
     var hour = ( "00" + this.hour ).slice( -2 );
     var minute = ( "00" + this.minute ).slice( -2 );
@@ -81,6 +82,13 @@ Object.defineProperties( Formation.Time.prototype, {
     var timeString = [ hour, minute ].join( ':' );
     timeString = timeString + whichM;
     return timeString;
+  }},
+
+  valueOf: { value: function(){
+    var second = 1000;
+    var minute = 60000;
+    var hour = 3600000;
+    return this.hour*hour + this.minute*minute + this.second*second;
   }}
 });
 

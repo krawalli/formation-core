@@ -24,7 +24,7 @@ ModelChoiceField.prototype = Object.create( Formation.Field.prototype );
 /* Single Model Choice  */
 Formation.Fields.ModelSingleChoice = function Field( params ){
   params = typeof params === "object" ? params : {};
-  params.widget = params.widget || 'ModelRadioInput';
+  params.widget = params.widget || 'ModelSelect';
   params.toDOM = function(){
     var instance = this.field.model.findOne({ _id: this.value });
     return instance;

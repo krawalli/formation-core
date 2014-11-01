@@ -132,6 +132,7 @@ Formation.FieldInstance = function( params ){
 
     pattern: { value: params.field.pattern },
     _optional: { value: params.field._optional },
+    required: { value: params.field.required },
     min: { value: params.field.min },
     max: { value: params.field.max },
 
