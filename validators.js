@@ -13,7 +13,7 @@ Object.defineProperty( Formation.Validators, "Email", {
     return Match.Where( function( value ){
       try {
         check( value, String );
-      } catch( Match.Error ){
+      } catch( error ){
         throw new Match.Error( "Please enter a string value." );
       }
       if ( value.indexOf( '@' ) === -1 || value.indexOf( '.' ) === -1 ){
@@ -36,7 +36,7 @@ Object.defineProperty( Formation.Validators, "Slug", {
     return Match.Where( function( value ){
       try {
         check( value, String );
-      } catch( Match.Error ){
+      } catch( error ){
         throw new Match.Error( "Please enter a string value." );
       }
       if ( ( min !== null && value.length < min ) || ( max !== null &&  value.length > max ) ){
@@ -55,7 +55,7 @@ Object.defineProperty( Formation.Validators, "BasicChar", {
     return Match.Where( function( value ){
       try {
         check( value, String );
-      } catch( Match.Error ){
+      } catch( error ){
         throw new Match.Error( "Please enter a string value." );
       }
       if ( value.length < min || ( max && value.length > max ) ){
@@ -109,7 +109,7 @@ Object.defineProperty( Formation.Validators, "BasicNumber", {
     return Match.Where( function( value ){
       try {
         check( value, Number );
-      } catch( Match.Error ){
+      } catch( error ){
         throw new Match.Error( "Please enter a number value." );
       }
       if ( ( typeof( min )==='number' && value < min ) || ( max && value > max ) ){
