@@ -47,59 +47,74 @@ Meteor.methods({
 	// }
 
 	S3GeneratePolicy: function( path, callback ){
-		var sak;
 		if (! Meteor.users.findOne( this.userId ) ) return Meteor.Error( 403, "Not authorized" );
 
-		try {
-			sak = Formation.Settings.S3.secretAccessKey;
-		} catch( err ){
-			return Meteor.Error( 500, "You have not set Formation.Settings.S3.secretAccessKey" );
-		}
+		var accessKey = Formation.Settings.S3.accessKeyId || meteorError( 500, "Please set Formation.Settings.S3.accessKeyId" );
+		var secretAccessKey = Formation.Settings.S3.secretAccessKey || meteorError( 500, "You have not set Formation.Settings.S3.secretAccessKey" );
+		var bucket = Formation.Settings.S3.bucket || meteorError( 500, "Please set an S3 bucket to upload to" );
 
-		// create policy
+		var region = "us-east-1";
+		var service = "s3";
+		var version = "aws4_request";
 		var date1 = new Date;
+
+		// set date to year-day-monthT00:00:00
 		date1.setHours( 0 ); date1.setMinutes( 0 ); date1.setSeconds( 0 ); date1.setMilliseconds( 0 );
-		date = date1.toISOString().replace( new RegExp( "[-:.]", "g" ), '' ).substring(0,15)+"Z";
+
+		// format: YYYYMMDDTHHMMSSZ
+		var date = date1.toISOString().replace( new RegExp( "[-:.]", "g" ), '' ).substring(0,15)+"Z";
+
+		//format: YYYYMMDD
 		var lameDate = date.substring( 0, 8 );
 
-		var cred = Formation.Settings.S3.accessKeyId || err( "Please set Formation.Settings.S3.accessKeyId" );
-		var credString = [ cred, lameDate, "us-east-1", "s3", "aws4_request" ].join( "/" );
+		// key/date/aws-region/aws-service/aws4_request
+		var credString = [ accessKey, lameDate, region, service, version ].join( "/" );
 
+		// expires 2 hours from now
 		var expiration = new Date;
 		expiration.setHours( date1.getHours() + 2 );
 
-		var policy = {
-			"expiration": expiration.toISOString(),
+		// put into object
+		var requestOb = {
+			expires: expiration.toUTCString(),
+			expiration: expiration.toISOString(),
+			algorithm: "AWS4-HMAC-SHA256",
+			date: date,
+			credential: credString,
+			acl: "public-read",
+			bucket: bucket
+		};
+
+		// policy to encrypt
+		var policyToSign = {
+			"expiration": requenstOb.expiration
 			"conditions": [
-				{ "bucket": Formation.Settings.S3.bucket || err( "Please set an S3 bucket to upload to" ) },
+				{ "acl": requestOb.acl },
+				{ "x-amz-algorithm":  requestOb.algorithm },
+				{ "x-amz-credential": requestOb.credential },
+				{ "bucket": requestOb.bucket },
 				[ "starts-with", "$key", path ],
-				{ "acl": "public-read" },
-				{ "x-amz-credential": credString },
-				{ "x-amz-algorithm": "AWS4-HMAC-SHA256" },
-				{ 'x-amz-date': date },
-				// { "AWSAccessKey": cred }
+				{ 'x-amz-date': requestOb.date },
 			]
 		};
 
-		var policyString = JSON.stringify( policy );
+		var policyString = JSON.stringify( policyToSign );
 		var policy64 = new Buffer( policyString ).toString( "base64" );
-		policy.conditions.push({ "Policy": policy64 });
+		requestOb.policy64 = policy64;
 
 		// create signing key
-		var cryptKey = "AWS4" + sak;
+		var cryptKey = "AWS4" + secretAccessKey;
 		var hmac = CryptoJS.algo.HMAC.create( CryptoJS.algo.SHA256, cryptKey );
 		hmac.update( lameDate );
-		hmac.update( "us-east-1" );
-		hmac.update( "s3" );
-		hmac.update( "aws4_request" );
+		hmac.update( region );
+		hmac.update( service );
+		hmac.update( version );
 		hmac.update( policy64 );
 		var hash = hmac.finalize();
 		var signature = hash.toString( CryptoJS.enc.Hex );
 
-		policy.conditions.push({ 'x-amz-signature': signature });
-		policy.date = date;
+		requestOb.signature = signature;
 
-		return policy;
-
+		return requestOb;
 	}
 });
