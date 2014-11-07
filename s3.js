@@ -87,13 +87,13 @@ Meteor.methods({
 
 		// policy to encrypt
 		var policyToSign = {
-			"expiration": requenstOb.expiration
+			"expiration": requestOb.expiration,
 			"conditions": [
-				{ "acl": requestOb.acl },
-				{ "x-amz-algorithm":  requestOb.algorithm },
-				{ "x-amz-credential": requestOb.credential },
 				{ "bucket": requestOb.bucket },
 				[ "starts-with", "$key", path ],
+				{ "acl": requestOb.acl },
+				{ "x-amz-credential": requestOb.credential },
+				{ "x-amz-algorithm":  requestOb.algorithm },
 				{ 'x-amz-date': requestOb.date },
 			]
 		};
