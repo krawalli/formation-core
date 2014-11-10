@@ -1,14 +1,9 @@
 Package.describe({
   name: "quietcreep:formation-core",
   summary: "Core objects for Formation for Meteor",
-  version: "1.0.2",
+  version: "1.0.3",
   git: "http://github.com/quietcreep/formation-core"
 });
-
-
-// Npm.depends({
-//   knox: "0.8.5"
-// });
 
 
 Package.onUse( function( api ) {
@@ -17,7 +12,7 @@ Package.onUse( function( api ) {
 
   var both = [ 'client', 'server' ];
   api.use([ 'underscore', 'check', 'reactive-var', 'tracker' ], both );
-  api.use([ 'jparker:crypto-sha256@0.1.0', 'jparker:crypto-hmac@0.1.0', 'jparker:crypto-core@0.1.0', 'jparker:crypto-base64@0.1.0' ], both );
+  api.use([ 'jparker:crypto-sha256@0.1.0', 'jparker:crypto-hmac@0.1.0', 'jparker:crypto-core@0.1.0', 'jparker:crypto-base64@0.1.0' ], 'server' );
 
 
   //// settings and setup ///////////
