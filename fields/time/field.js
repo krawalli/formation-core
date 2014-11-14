@@ -1,16 +1,16 @@
 Formation.Time = function Time( time ){
   var self = this;
 
-  if ( time.__name__ === "Time" ){
-    self.hour = time.hour;
-    self.minute = time.minute;
-    self.second = time.second;
-
-  } else if ( typeof( time ) === 'undefined' ){
+  if ( typeof( time ) === 'undefined' || time === null ){
     var d = new Date();
     self.hour = d.getHours();
     self.minute = d.getMinutes();
     self.second = d.getSeconds();
+
+  } else if ( time.__name__ === "Time" ){
+    self.hour = time.hour;
+    self.minute = time.minute;
+    self.second = time.second;
 
   } else if ( typeof( time ) === 'string' ){
     timeStrings = time.split( ':' );
