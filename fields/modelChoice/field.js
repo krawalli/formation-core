@@ -67,7 +67,7 @@ Formation.Fields.ModelMultipleChoice = function Field( params ){
     return value;
   };
 
-  params.defaultValue = params.defaultValue || [];
+  params.defaultValue = params.defaultValue || function(){ return [] };
 
   ModelChoiceField.call( this, params );
 
