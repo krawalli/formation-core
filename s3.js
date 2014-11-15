@@ -2,7 +2,7 @@
 Meteor.methods({
 
 	S3GeneratePolicy: function( options, callback ){
-		if (! Meteor.users.findOne( this.userId ) ) return Meteor.Error( 403, "Not authorized" );
+		if (! Meteor.users.findOne( this.userId ) ) throw new Meteor.Error( "not-logged-in", "You must be logged in to upload." );
 		var options = options || {};
 
 		var accessKey = Formation.Settings.S3.accessKeyId || meteorError( 500, "Please set Formation.Settings.S3.accessKeyId" );
