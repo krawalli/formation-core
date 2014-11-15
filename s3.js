@@ -5,9 +5,9 @@ Meteor.methods({
 		if (! Meteor.users.findOne( this.userId ) ) throw new Meteor.Error( "not-logged-in", "You must be logged in to upload." );
 		var options = options || {};
 
-		var accessKey = Formation.Settings.S3.accessKeyId || meteorError( 500, "Please set Formation.Settings.S3.accessKeyId" );
-		var secretAccessKey = Formation.Settings.S3.secretAccessKey || meteorError( 500, "You have not set Formation.Settings.S3.secretAccessKey" );
-		var bucket = options.bucket || Formation.Settings.S3.bucket || meteorError( 500, "Please set an S3 bucket to upload to" );
+		var accessKey = Formation.Settings.S3.accessKeyId || meteorError( "s3-not-configured", "Please set Formation.Settings.S3.accessKeyId" );
+		var secretAccessKey = Formation.Settings.S3.secretAccessKey || meteorError( "s3-not-configured", "You have not set Formation.Settings.S3.secretAccessKey" );
+		var bucket = options.bucket || Formation.Settings.S3.bucket || meteorError( "s3-not-configured", "Please set an S3 bucket to upload to" );
 
 		var path = options.path || '';
 		var type = options.type || 'text';
@@ -80,3 +80,8 @@ Meteor.methods({
 		return requestOb;
 	}
 });
+
+
+function meteorError( reason, message ){
+	throw new Meteor.Error( reason, message );
+}
