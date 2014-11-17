@@ -7,7 +7,9 @@
 Formation.Fields.Char = function Field( params ){
   params = typeof params === "object" ? params : {};
   params.widget = params.widget || 'TextInput';
-  params.max = params.max || err( 'Please add a maximum length for this field greater than 0.' )
+  params.min = params.min || 1;
+  params.max = params.max || err( 'Please add a maximum length for this field greater than 0.' );
+
   params.fromDOM = function( value ){
     if (! this.required && value === '') return undefined;
     return value.toString();

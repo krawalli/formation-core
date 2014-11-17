@@ -1,6 +1,7 @@
 Formation.Fields.Email = function Field( params ){
   params = typeof params === "object" ? params : {};
   params.widget = params.widget || 'EmailInput';
+  params.min = params.min || 1;
   params.max = params.max || err( 'Please add a maximum length for this field greater than 0.' );
 
   Formation.Field.call( this, params );

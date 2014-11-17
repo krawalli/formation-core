@@ -28,6 +28,7 @@ Formation.Fields.Slug = function Field( params ){
   params.fromDOM = function( value ){
     return Formation.camelToSlug( value );
   };
+  params.min = params.min || 1;
   params.max = params.max || err( 'Please add a maximum length for this field greater than 0.' )
 
   Formation.Field.call( this, params );

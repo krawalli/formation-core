@@ -1,6 +1,7 @@
 Formation.Fields.URL = function Field( params ){
   params = typeof params === "object" ? params : {};
   params.widget = params.widget || 'URLInput';
+  params.min = params.min || 1;
   params.max = params.max || err( 'Please add a maximum length for this field greater than 0.' )
   params.fromDOM = function( value ){
     if (! this.required && value === '') return undefined;
