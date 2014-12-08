@@ -22,6 +22,7 @@ Formation.FieldInstance = function( params ){
       * @property value
       */
       value: { value: typeof( value ) === "undefined" ? self.field.defaultValue() : value, enumerable: true, writable: true },
+      valueOf: { value: function(){ return self.value } },
      	_editMode: { value: new ReactiveVar( false ) },
       _errors: { value: new ReactiveVar( [] ) }
     });
