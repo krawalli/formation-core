@@ -3,9 +3,8 @@ Formation.Fields.Number = function Field( params ){
   params.widget = params.widget || "NumberInput";
   params.min = typeof( params.min ) === 'number' ? params.min : null;
   params.fromDOM = function( value ){
-    if ( value === '' ){
+    if (! this.required && ( value === '' || value === null || value === undefined ) )
       return undefined;
-    }
     return +value;
   };
 
@@ -46,8 +45,9 @@ Formation.Fields.NumberArray = function Field( params ){
     }
   };
   params.fromDOM = function( value ){
-    if ( value === "" ) return undefined;
-
+    if (! this.required && ( value === "" || value === null || value === undefined ) ) return undefined;
+    if (! this.required && ! this.length ) return undefined;
+    
     var cleanValue = value.split( this.field.delimiter );
     for ( var i=0; i < cleanValue.length; i++ ){
       cleanValue[ i ] = +cleanValue[ i ].trim();

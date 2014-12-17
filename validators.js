@@ -214,10 +214,6 @@ Object.defineProperty( Formation.Validators, "Date", {
         throw new Error( "Please enter a date in YYYY-MM-DD format" );
       }
 
-      if ( ! min instanceof Date || ! max instanceof Date ){
-        throw new Error( "Please enter javascript Date objects as min and max values" );
-      }
-
       if ( ( min !== null && value < min ) || ( max !== null && value > max ) ){
         if ( min === null ){
           throw new Error( "Please enter a value less than " + max.toLocaleString() + "." );
@@ -228,7 +224,9 @@ Object.defineProperty( Formation.Validators, "Date", {
         }
       }
 
-        return true;
+      if (! +value ) throw new Error( "Please enter a valid date" );
+
+      return true;
     })
   },
   enumerable: true

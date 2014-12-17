@@ -11,7 +11,7 @@ Formation.Fields.Char = function Field( params ){
   params.max = params.max || err( 'Please add a maximum length for this field greater than 0.' );
 
   params.fromDOM = function( value ){
-    if (! this.required && value === '') return undefined;
+    if (! this.required && ! value ) return undefined;
     return value.toString();
   }
 
@@ -54,7 +54,8 @@ Formation.Fields.CharArray = function Field( params ){
     }
   }
   params.fromDOM = function( value ){
-    if ( value === "" ) return undefined;
+    if (! this.required && ! value ) return undefined;
+    if (! this.required && ! value.length ) return undefined;
 
     var cleanValue = value.split( this.field.delimiter );
     for ( var i=0; i < cleanValue.length; i++ ){

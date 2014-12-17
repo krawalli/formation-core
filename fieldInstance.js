@@ -145,6 +145,7 @@ Formation.FieldInstance = function( params ){
         this._errors.set( [] );
 
         try {
+          this.value = this.fromDOM( this.value );  //if not clean already
           check( this.value, this.pattern() );
         } catch( e ){
           var errs = this._errors.get();
