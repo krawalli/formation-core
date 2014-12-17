@@ -12,7 +12,7 @@ Formation.Fields.Char = function Field( params ){
 
   params.fromDOM = function( value ){
     if (! this.required && ! value ) return undefined;
-    return value.toString();
+    return value;
   }
 
   Formation.Field.call( this, params );
@@ -57,7 +57,7 @@ Formation.Fields.CharArray = function Field( params ){
     if (! this.required && ! value ) return undefined;
     if (! this.required && ! value.length ) return undefined;
     if ( value instanceof Array ) return value;
-    
+
     var cleanValue = value.split( this.field.delimiter );
     for ( var i=0; i < cleanValue.length; i++ ){
       cleanValue[ i ] = cleanValue[ i ].trim();
