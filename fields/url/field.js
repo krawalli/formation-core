@@ -3,11 +3,6 @@ Formation.Fields.URL = function Field( params ){
   params.widget = params.widget || 'URLInput';
   params.min = params.min || 1;
   params.max = params.max || err( 'Please add a maximum length for this field greater than 0.' )
-  params.fromDOM = function( value ){
-    if (! this.required && value === '') return undefined;
-    if (! this.required && value === undefined ) return undefined;
-    return value.toString();
-  }
 
   Formation.Field.call( this, params );
 

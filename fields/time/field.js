@@ -107,6 +107,7 @@ Formation.Fields.Time = function Field( params ){
     return value;
   };
   params.fromDOM = function( value ){
+    if (! value && ! this.required ) return undefined;
     var value = new Formation.Time( value );
     return value;
   };

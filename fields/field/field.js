@@ -35,6 +35,7 @@ if ( typeof( Formation.Fields ) === 'undefined' )  Formation.Fields = {};
 
 Formation.Field = function Field( params ){
   var fromDOMDefault = function( value ){
+    if (! value && ! this.required ) return undefined;
     return value;
   };
   var toDOMDefault = function(){

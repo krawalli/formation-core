@@ -242,7 +242,7 @@ Object.defineProperty( Formation.Validators, "URL", {
       } catch( e ){
         throw new Error( 'Please include the full URL (http://...)');
       }
-      var regex = /^(https?:\/\/)([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+      var regex = /^(https?:\/\/)([\da-z\.-]+)\.([a-z\.]{2,6})(\/.*)*\/?$/;
       if (! value.match( regex ) ){
         throw new Error( "Please enter a valid URL." );
       }

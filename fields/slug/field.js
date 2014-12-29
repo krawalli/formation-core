@@ -26,6 +26,7 @@ Formation.Fields.Slug = function Field( params ){
   params = typeof params === "object" ? params : {};
   params.widget = params.widget || 'SlugInput';
   params.fromDOM = function( value ){
+    if (! value && ! this.required ) return undefined;
     return Formation.camelToSlug( value );
   };
   params.min = params.min || 1;
