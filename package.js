@@ -1,25 +1,20 @@
 Package.describe({
   name: "quietcreep:formation-core",
   summary: "Core objects for Formation for Meteor",
-  version: "1.0.5_2",
+  version: "1.1.0",
   git: "http://github.com/quietcreep/formation-core"
 });
 
 
 Package.onUse( function( api ) {
 
-  api.versionsFrom( 'METEOR@0.9.2.2' );
+  api.versionsFrom( 'METEOR@1.0.2.1' );
 
   var both = [ 'client', 'server' ];
   api.use([ 'underscore', 'check', 'reactive-var', 'tracker' ], both );
-  api.use([ 'jparker:crypto-sha256@0.1.0', 'jparker:crypto-hmac@0.1.0', 'jparker:crypto-core@0.1.0', 'jparker:crypto-base64@0.1.0' ], 'server' );
-
 
   //// settings and setup ///////////
   api.addFiles( 'settings.js', both );
-  api.addFiles( 's3-methods.js', both );
-  api.addFiles( 's3.js', 'server' );
-
 
   //// fields ///////////////////////
   var fields = [
@@ -29,7 +24,6 @@ Package.onUse( function( api ) {
     'date',
     'datetime',
     'email',
-    'fileUpload',
     'modelChoice',
     'number',
     'password',

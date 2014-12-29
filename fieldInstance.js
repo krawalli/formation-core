@@ -66,14 +66,6 @@ Formation.FieldInstance = function( params ){
     fromDOM: { value: params.field.fromDOM },
 
     /**
-    * For file upload field; File path relative to bucket
-    * @property uploadTo
-    * @type String
-    */
-    uploadTo: { value: params.field.uploadTo },
-
-
-    /**
     * Name of template widget to use for display
     * @property widget
     * @type String

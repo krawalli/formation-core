@@ -252,19 +252,3 @@ Object.defineProperty( Formation.Validators, "URL", {
   },
   enumerable: true
 });
-
-
-// Just a URL validator with slightly different Error
-Object.defineProperty( Formation.Validators, "FileUpload", {
-  value: function(){
-    return Match.Where( function( value ){
-      try {
-        check( value, Formation.Validators.URL() );
-      } catch( e ){
-        throw new Error( "Please choose a file to upload." )
-      }
-      return true;
-    })
-  },
-  enumerable: true
-});
