@@ -76,7 +76,7 @@ Object.defineProperties( Formation.Time.prototype, {
 
   to12HourString: { value: function(){
     var whichM = " AM";
-    if ( this.hour > 12 ) whichM = " PM";
+    if ( this.hour >= 12 ) whichM = " PM";
     var hour = ( this.hour % 12 || 12 ).toString();
     var minute = ( "00" + this.minute ).slice( -2 );
     var timeString = [ hour, minute ].join( ':' );
