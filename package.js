@@ -1,16 +1,16 @@
 Package.describe({
   name: "quietcreep:formation-core",
   summary: "Core objects for Formation for Meteor",
-  version: "1.1.0_3",
+  version: "2.0.0",
   git: "http://github.com/quietcreep/formation-core"
 });
+
+var both = [ 'client', 'server' ];
 
 
 Package.onUse( function( api ) {
 
   api.versionsFrom( 'METEOR@1.0.2.1' );
-
-  var both = [ 'client', 'server' ];
   api.use([ 'underscore', 'check', 'reactive-var', 'tracker' ], both );
 
   //// settings and setup ///////////
@@ -46,15 +46,16 @@ Package.onUse( function( api ) {
   api.addFiles( 'modelSuper.js', both );
   api.addFiles( 'modelInstance.js', both );
   api.addFiles( 'newModelInstance.js', both );
-
+  api.addFiles( "saving.js", "server" );
 
   api.export( 'Formation' );
 
 });
 
 
+
 Package.onTest( function( api ) {
-  // api.use( 'tinytest' );
-  // api.use( 'quietcreep:formation' );
-  // api.addFiles( 'quietcreep:formation-tests.js' );
+  api.use([ 'tinytest', 'test-helpers', 'underscore', 'quietcreep:formation-core' ], both );
+  api.addFiles( 'tests/saving.js' );
+  api.addFiles( 'tests/getValue.js' );
 });

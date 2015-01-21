@@ -21,25 +21,11 @@ Formation.FieldInstance = function( params ){
       * Actual value of field
       * @property value
       */
-      value: { value: typeof( value ) === "undefined" ? self.field.defaultValue() : value, enumerable: true, writable: true },
+      value: { value: value === undefined || value === null ? self.field.defaultValue() : value, enumerable: true, writable: true },
       valueOf: { value: function(){ return self.value } },
      	_editMode: { value: new ReactiveVar( false ) },
       _errors: { value: new ReactiveVar( [] ) }
     });
-  }
-
-  var editable;
-  switch ( typeof( params.field.editable ) ){
-    case "boolean":
-      var boo = params.field.editable
-      editable = function(){ return boo };
-      break;
-    case "undefined":
-      editable = function(){ return true };
-      break;
-    case "function":
-      editable = params.field.editable;
-      break;
   }
 
   Object.defineProperties( FieldInstance.prototype, {
@@ -77,7 +63,15 @@ Formation.FieldInstance = function( params ){
     * @method editable
     * @return Boolen
     */
-    editable: { value: editable },
+    editable: { value: params.field.editable },
+
+
+    /**
+    * Check to see if field is savable by user;
+    * @method editable
+    * @return Boolen
+    */
+    savable: { value: params.field.savable },
 
 
     /**
@@ -165,14 +159,27 @@ Formation.FieldInstance = function( params ){
     * @return Object
     */
     getValue: { value: function(){
-        if ( this.value instanceof Array && _.isEmpty( this.value ) ){
-          return undefined;
-        } else if ( this.value === '' && ! this.field.required ){
-          return undefined;
-        }
+        // if ( this.value instanceof Array && _.isEmpty( this.value ) ){
+        //   return undefined;
+        // } else if ( this.value === '' && ! this.field.required ){
+        //   return undefined;
+        // }
+        if (! this.required && ! this.value && typeof( this.value ) !== "number" ) return null;
         return this.value;
       }
-    }
+    },
+
+
+    /**
+    * Set plain JavaScript value
+    * @method getValue
+    * @param {value} value
+    * @return Object
+    */
+    setValue: { value: function setValue( value ){
+      if ( value ) this.value = value;
+      return this.value;
+    }}
 
   });
 
@@ -187,6 +194,12 @@ Formation.FieldInstance = function( params ){
   if ( params.field.model ){
     Object.defineProperty( FieldInstance.prototype, "model", { value: params.field.model })
   }
+
+  // if ( Meteor.isServer ){
+    Object.defineProperty( FieldInstance.prototype, "getUnsavableValues", { value: function getUnsavableValues(){
+      if (! this.savable() ) return this.value;
+    }})
+  // }
 
   return FieldInstance;
 };

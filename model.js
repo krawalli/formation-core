@@ -85,12 +85,43 @@ Formation.Model = function( params ){
     break;
   }
 
+  var editable;
+  switch ( typeof( params.editable ) ){
+    case Meteor.isServer:
+      editable = function(){ return true };
+      break;
+    case "boolean":
+      var boo = params.editable
+      editable = function(){ return boo };
+      break;
+    case "function":
+      editable = params.editable;
+      break;
+    default:
+      editable = function(){ return true };
+      break;
+  }
+
+  var savable;
+  switch ( typeof( params.savable ) ){
+    case "boolean":
+      var boo = params.savable
+      savable = function(){ return boo };
+      break;
+    case "function":
+      savable = params.savable;
+      break;
+    default:
+      savable = function(){ return true };
+      break;
+  }
+
   var hooks = {};
-  hooks.beforeSave = typeof( params.beforeSave ) === 'function' || typeof( params.beforeSave ) === 'undefined' ? params.beforeSave : err( "beforeSave hook must be a function" );
-  hooks.afterSave = typeof( params.afterSave ) === 'function' || typeof( params.afterSave ) === 'undefined' ? params.afterSave : err( "afterSave hook must be a function" );
-  hooks.beforeValidation = typeof( params.beforeValidation ) === 'function' || typeof( params.beforeValidation ) === 'undefined' ? params.beforeValidation : err( "beforeValidation hook must be a function" );
-  hooks.afterValidation = typeof( params.afterValidation ) === 'function' || typeof( params.afterValidation ) === 'undefined' ? params.afterValidation : err( "afterValidation hook must be a function" );
-  hooks.modelValidator = typeof( params.modelValidator ) === 'function' || typeof( params.modelValidator ) === 'undefined' ? params.modelValidator : err( "modelValidator hook must be a function" );
+  hooks.beforeSave        = typeof( params.beforeSave )       === 'function' || typeof( params.beforeSave )       === 'undefined' ? params.beforeSave       : err( "beforeSave hook must be a function" );
+  hooks.afterSave         = typeof( params.afterSave )        === 'function' || typeof( params.afterSave )        === 'undefined' ? params.afterSave        : err( "afterSave hook must be a function" );
+  hooks.beforeValidation  = typeof( params.beforeValidation ) === 'function' || typeof( params.beforeValidation ) === 'undefined' ? params.beforeValidation : err( "beforeValidation hook must be a function" );
+  hooks.afterValidation   = typeof( params.afterValidation )  === 'function' || typeof( params.afterValidation )  === 'undefined' ? params.afterValidation  : err( "afterValidation hook must be a function" );
+  hooks.modelValidator    = typeof( params.modelValidator )   === 'function' || typeof( params.modelValidator )   === 'undefined' ? params.modelValidator   : err( "modelValidator hook must be a function" );
 
 
   /**
@@ -112,6 +143,9 @@ Formation.Model = function( params ){
   function Model(){}
 
   Object.defineProperties( Model.prototype, {
+    __name__: { value: 'Model' },
+
+
     /**
     * Mongo.Collection object
     * @property collection
@@ -142,7 +176,16 @@ Formation.Model = function( params ){
     * @method editable
     * @type Function
     */
-    editable: { value: typeof params.editable === 'boolean' || typeof params.editable === 'function' ? params.editable : true },
+    editable: { value: editable },
+
+
+    /**
+    * Developer-set function to determine if model is savable by user;
+    *  Context of the function you pass in will be a ModelInstance (i.e. use this.<field>.value to access fields values );
+    * @method editable
+    * @type Function
+    */
+    savable: { value: savable },
 
 
     /**
@@ -169,6 +212,18 @@ Formation.Model = function( params ){
         }, {} );
       }
     },
+
+
+    savableFields: { value: function(){
+      return _.reduce( _.keys( this ), function( memo, field ){
+        var f;
+        if ( this[ field ] instanceof Array ) f = this[ field ][ 0 ];
+        else f = this[ field ]
+
+        if ( f.savable() ) memo.push( field );
+        return memo;
+      }.bind( this ), [] )
+    }},
 
 
     /**

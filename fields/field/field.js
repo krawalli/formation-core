@@ -42,8 +42,40 @@ Formation.Field = function Field( params ){
     var protoself = this;
     return protoself.getValue();
   };
-  var fromDOM = params.fromDOM || fromDOMDefault;
-  var toDOM = params.toDOM || toDOMDefault;
+  var fromDOM = params.fromDOM  || fromDOMDefault;
+  var toDOM   = params.toDOM    || toDOMDefault;
+
+  var editable;
+  switch ( typeof( params.editable ) ){
+    case Meteor.isServer:
+      editable = function(){ return true };
+      break;
+    case "boolean":
+      var boo = params.editable
+      editable = function(){ return boo };
+      break;
+    case "function":
+      editable = params.editable;
+      break;
+    default:
+      editable = function(){ return true };
+      break;
+  }
+
+  var savable;
+  switch ( typeof( params.savable ) ){
+    case "boolean":
+      var boo = params.savable
+      savable = function(){ return boo };
+      break;
+    case "function":
+      savable = params.savable;
+      break;
+    default:
+      savable = function(){ return true };
+      break;
+  }
+
 
   if ( Meteor.isServer ) params.editable = function(){ return true };
 
@@ -95,7 +127,14 @@ Formation.Field = function Field( params ){
     * @method editable
     * @return Boolean
     */
-    editable: { value: typeof params.editable === 'boolean' || typeof params.editable === 'function' ? params.editable : true },
+    editable: { value: editable },
+
+    /**
+    * Check to see if field is editable by user; client-side only
+    * @method editable
+    * @return Boolean
+    */
+    savable: { value: savable },
 
     /**
     * Is this field required?

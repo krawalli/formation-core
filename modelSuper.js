@@ -14,43 +14,12 @@ ModelInstanceSuper = function( params ){
   */
   function ModelInstance( data ){
     this._errors = new ReactiveVar( [] );
-    var schema = this._model;
-
-    // iterate through fields and add data
-    for ( var field in schema ){
-      if ( schema[ field ] instanceof Array ){
-        data[ field ] = data[ field ] || [];
-        this[ field ] = [];
-
-        for ( var i=0; i < data[ field ].length; i++ ){
-          if ( this.__name__ === "NewModelInstance" ){
-            this[ field ].push( new schema[ field ][ 0 ].newInstance( data[ field ][ i ] ) );
-          } else {
-            this[ field ].push( new schema[ field ][ 0 ].instance( data[ field ][ i ] ) );
-          }
-          Object.defineProperty( this[ field ][ i ], "_parent", { value: this });
-        }
-
-        if ( _.isEmpty( this[ field ] ) ){
-          for ( var i=0; i < schema[ field ][ 0 ].extra; i++ ){
-            this[ field ].push( new schema[ field ][ 0 ].newInstance );
-            Object.defineProperty( this[ field ][ 0 ], "_parent", { value: this });
-          }
-        }
-      } else {
-        this[ field ] = new schema[ field ].instance( data[ field ] );
-        this[ field ]._editMode.set( this.__name__ === "NewModelInstance" );
-        Object.defineProperty( this[ field ], "_parent", { value: this });
-      }
-    }
-
+    this.setValue( data );
     // if new instance, make sure all fields are in edit mode
-    if ( this.__name__ === "NewModelInstance" ) this.editMode();
+    if ( this.isNew() ) this.editMode();
 
   }
 
-
-  if ( Meteor.isServer ) params.model.editable = function(){ return true };
 
   Object.defineProperties( ModelInstance.prototype, {
     __name__: { value: params.__name__ },
@@ -105,7 +74,14 @@ ModelInstanceSuper = function( params ){
     * @method editable
     * @return Boolen
     */
-    editable: { value: typeof params.model.editable === 'boolean' ? function(){ return params.model.editable; } : params.model.editable },
+    editable: { value: params.model.editable },
+
+    /**
+    * Check to see if model is editable by user; client-side only
+    * @method editable
+    * @return Boolen
+    */
+    savable: { value: params.model.savable },
 
     /**
     * If model is editable by user, toggle editMode
@@ -113,8 +89,7 @@ ModelInstanceSuper = function( params ){
     * @param {Boolean} boo [optional]
     * @return Boolean
     */
-    editMode:  { value: function( boo ){
-
+    editMode:  { value: function editMode( boo ){
         if ( this.editable() ){
           var fields = this.fields();
           typeof boo === "boolean" ? this._editMode.set( boo ) : this._editMode.set( ! this._editMode.get() );
@@ -128,9 +103,7 @@ ModelInstanceSuper = function( params ){
               fields[ field ].editMode( this.inEditMode() );
             }
           }
-
         }
-
         return this.inEditMode();
       }
     },
@@ -140,7 +113,7 @@ ModelInstanceSuper = function( params ){
     * @method inEditMode
     * @return Boolean
     */
-    inEditMode:  { value: function(){
+    inEditMode:  { value: function inEditMode(){
         return this._editMode.get();
       }
     },
@@ -151,7 +124,7 @@ ModelInstanceSuper = function( params ){
     * @method errors
     * @return Array
     */
-    errors: { value: function(){
+    errors: { value: function errors(){
         return this._errors.get();
       }
     },
@@ -162,7 +135,7 @@ ModelInstanceSuper = function( params ){
     * @method getAllErrors
     * @return Object
     */
-    getAllErrors: { value: function(){
+    getAllErrors: { value: function getAllErrors(){
         var self = this;
         var errors;
 
@@ -199,7 +172,7 @@ ModelInstanceSuper = function( params ){
     * @method hasErrors
     * @return Boolean
     */
-    hasErrors: { value: function(){
+    hasErrors: { value: function hasErrors(){
         var ob = this.fields();
         var hasErr = false;
         var self = this;
@@ -227,11 +200,11 @@ ModelInstanceSuper = function( params ){
     },
 
     /**
-    * Return object of fields only, limited to fields preset in model
+    * Return object of fields only, limited to fields present in model
     * @method fields
     * @return Object
     */
-    fields: { value: function(){
+    fields: { value: function fields(){
         var fields = {}
         for ( var field in this ){
           if ( _.has( this._model, field ) ){
@@ -247,7 +220,7 @@ ModelInstanceSuper = function( params ){
     * @method fieldsArray
     * @return Array
     */
-    fieldsArray: { value: function(){
+    fieldsArray: { value: function fieldsArray(){
         return _.values( this.fields() );
       }
     },
@@ -258,10 +231,9 @@ ModelInstanceSuper = function( params ){
     * @method isNew
     * @return Boolean
     */
-    isNew: { value: function(){
-        return this.__name__ === 'NewModelInstance';
-      }
-    },
+    isNew: { value: function isNew(){
+      return this.__name__ === 'NewModelInstance';
+    }},
 
 
     /**
@@ -269,82 +241,134 @@ ModelInstanceSuper = function( params ){
     * @method save
     * @return Number
     */
-    save: { value: function( params, callback ){
-        if ( this.beforeSave ){
-          this.beforeSave();
+    save: { value: function save( params, callback ){
+      if ( this.beforeSave ) this.beforeSave();
+      this.validate();
+
+      var data = this.getValue();
+
+      function saveCallback( err, res ){
+        if ( err ){
+          var errs = this._errors.get();
+          errs.push( err );
+          this._errors.set( errs )
+          throw new Error( "Please check the form for errors" );
         }
-
-        this.validate();
-        var data = this.getValue();
-
-        if ( this.__name__ === "NewModelInstance" ){
-          delete data._id;
-          var objectId = this._model.collection.insert( data );
-        } else {
-          var objectId = this._model.collection.update( { _id: this._id }, { $set: data } );
-        }
-
-        if ( this.afterSave ){
-          this.afterSave();
-        }
-
-        if ( callback && typeof( callback ) === 'function' ){
-          callback( data );
-        }
-
-        this.editMode( false );
-
-        return objectId;
+        this.setValue( res );
+        if ( this.afterSave ) this.afterSave();
+        if ( callback ) callback( err, res );
       }
-    },
+
+      if ( this.isNew() ){
+        if (! this._parent ) delete data._id;
+        else _ensureId.call( this );
+        var objectId = this._model.collection.insert( data, saveCallback.bind( this ));
+      } else {
+        var objectId = Meteor.call( "Formation.update", this._id, data, this._model.collection._name, saveCallback.bind( this ));
+      }
+
+      this.editMode( false );
+      return objectId;
+    }},
+
 
     /**
     * Return plain JavaScript object with values.  Blank, non-required values and their fields are not included
     * @method getValue
     * @return Object
     */
-    getValue: { value: function(){
-        var data;
-        var self = this;
-        data = {};
-        var fields = self.fields();
+    getValue: { value: function getValue(){
+      var self    = this;
+      var data    = {};
+      var fields  = self.fields();
+      _ensureId.call( this )
 
-        for ( var field in fields ){
-          if ( self._model[ field ] instanceof Array && self[ field ] instanceof Array ){
-            if ( ! _.isEmpty( self[ field ] ) ){
-              data[ field ] = [];
+      if (! this.savable() && ! this._parent ) return;
+      // if (! this.savable() && this._parent ) return { _id: this._id };
 
-              for ( var i=0; i < self[ field ].length; i++ ){
-                if ( self[ field ][ i ].__name__ !== "NewModelInstance" ){
-                  data[ field ].push( self[ field ][ i ].getValue() );
+      for ( var field in fields ){
+        if ( self._model[ field ] instanceof Array && self[ field ] instanceof Array ){
+          data[ field ] = [];
 
-                } else if ( self[ field ][ i ]._model.required || self[ field ][ i ].getValue() !== undefined ){
-                  data[ field ].push( self[ field ][ i ].getValue() );
-                }
-              }
+          for ( var i=0; i < self[ field ].length; i++ ){
+            if (! self[ field ][ i ].isNew() ){
+              data[ field ].push( self[ field ][ i ].getValue() );
+
+            } else if ( self[ field ][ i ]._model.required || self[ field ][ i ].getValue() !== undefined ){
+              data[ field ].push( self[ field ][ i ].getValue() );
             }
-
-          } else {
-            data[ field ] = fields[ field ].getValue();
           }
+
+        } else {
+          data[ field ] = fields[ field ].getValue();
         }
-
-        for ( var field in data ){
-          if ( data[ field ] === undefined ){
-            delete data[ field ];
-          }
-        }
-
-
-        if (! this._model.required &&
-            _.isEmpty( _.compact( _.values( data ) ) ) &&
-            this.__name__ === "NewModelInstance" ){
-          return;
-        }
-
-        return data;
       }
-    },
+
+      for ( var field in data ){
+        if ( ( data[ field ] === undefined || data[ field ] === null ) && fields[ field ].required ){
+          delete data[ field ];
+        }
+      }
+
+
+      if (! this._model.required && _.isEmpty( _.compact( _.values( data ) ) ) && this.isNew() ){
+        return;
+      }
+
+      if ( this._parent && this._id ) data._id = this._id;
+
+      return data;
+    }},
+
+
+    /**
+    * Set instance data with plain JavaScript object.
+    * @method setValue
+    * @param {Object} data
+    * @return ModelInstance
+    */
+    setValue: { value: function setValue( data ){
+      var schema = this._model;
+      if (! data ) return this;
+
+      // iterate through fields and add data
+      for ( var field in schema ){
+        if ( schema[ field ] instanceof Array ){
+          data[ field ] = data[ field ] || [];
+          this[ field ] = [];
+
+          for ( var i=0; i < data[ field ].length; i++ ){
+            if ( this.isNew() ){
+              this[ field ][ i ] = new schema[ field ][ 0 ].newInstance( data[ field ][ i ] );
+            } else {
+              this[ field ][ i ] = new schema[ field ][ 0 ].instance( data[ field ][ i ] );
+            }
+            if (! this[ field ][ i ]._parent )
+              Object.defineProperty( this[ field ][ i ], "_parent", { value: this });
+            if (! this[ field ][ i ]._id )
+              Object.defineProperty( this[ field ][ i ], "_id", { value: data[ field ][ i ]._id || ( new Mongo.ObjectID ).toJSONValue() } )
+          }
+
+          if ( _.isEmpty( this[ field ] ) && ! Meteor.isServer ){
+            for ( var i=0; i < schema[ field ][ 0 ].extra; i++ ){
+              this[ field ].push( new schema[ field ][ 0 ].newInstance );
+              Object.defineProperty( this[ field ][ i ], "_parent", { value: this });
+              Object.defineProperty( this[ field ][ i ], "_id", { value: ( new Mongo.ObjectID ).toJSONValue() } )
+            }
+          }
+        } else {
+          if ( this[ field ] ){
+            this[ field ].setValue( data[ field ] ) || this[ field ].getValue();
+          } else {
+            this[ field ] = new schema[ field ].instance( data[ field ] );
+            this[ field ]._editMode.set( this.isNew() );
+            Object.defineProperty( this[ field ], "_parent", { value: this });
+          }
+        }
+      }
+
+      return this;
+    }},
 
 
     /**
@@ -355,17 +379,14 @@ ModelInstanceSuper = function( params ){
     validate: { value: function( callback ){
         this._errors.set( [] );
 
-        if ( this.beforeValidation ){
-          this.beforeValidation();
-        }
+        if ( this.beforeValidation ) this.beforeValidation();
+        _ensureId.call( this );
 
         var fields = this.fields();
         for ( var field in fields ){
           if ( this._model[ field ] instanceof Array && this[ field ] instanceof Array ){
             for ( var i=0; i < this[ field ].length; i++ ){
-              if ( ! this[ field ][ i ]._parent ){
-                Object.defineProperty( this[ field ][ i ], "_parent", { value: this });
-              }
+              _ensureParent.call( this, this[ field ][ i ] );
               this[ field ][ i ].validate();
             }
           } else {
@@ -397,7 +418,7 @@ ModelInstanceSuper = function( params ){
         }
 
         // Remove errors of unrequired fields
-        if ( this.hasErrors() && this.__name__ === "NewModelInstance" ){
+        if ( this.hasErrors() && this.isNew() ){
           if ( ! this._model.required ){
 
             var fields = this.fields();
@@ -426,13 +447,8 @@ ModelInstanceSuper = function( params ){
           throw new Error( 'Please check the fields for errors.' );
         }
 
-        if ( this.afterValidation ){
-          this.afterValidation();
-        }
-
-        if ( typeof( callback ) === "function" ){
-          callback();
-        }
+        if ( this.afterValidation ) this.afterValidation();
+        if ( typeof( callback ) === "function" ) callback();
 
       }
     }
@@ -448,6 +464,49 @@ ModelInstanceSuper = function( params ){
     }
   }
 
+  // if ( Meteor.isServer ){
+    /**
+    * Return plain JavaScript object with values.  Blank, non-required values and their fields are not included
+    * @method getValue
+    * @return Object
+    */
+    Object.defineProperty( ModelInstance.prototype, "getUnsavableValues", { value: function getUnsavableValues(){
+      var self    = this;
+      var data    = {};
+      var fields  = self.fields();
+      if (! this.savable() ) return this.getValue();
+
+      for ( var field in fields ){
+        if ( self._model[ field ] instanceof Array && self[ field ] instanceof Array ){
+          data[ field ] = [];
+
+          for ( var i=0; i < self[ field ].length; i++ ){
+            data[ field ].push( self[ field ][ i ].getUnsavableValues() );
+          }
+
+        } else {
+          var val = fields[ field ].getUnsavableValues();
+          if ( val ) data[ field ] = val;
+        }
+      }
+
+      if ( this._parent && this._id ) data._id = this._id;
+      return data;
+    }})
+  // }
+
   return ModelInstance;
 
 };
+
+
+
+function _ensureId(){
+  if (! this._id && this._parent )
+    Object.defineProperty( this, "_id", { value: ( new Mongo.ObjectID ).toJSONValue() })
+}
+
+function _ensureParent( field ){
+  if (! field._parent )
+    Object.defineProperty( field, "_parent", { value: this })
+}

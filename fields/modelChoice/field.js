@@ -25,6 +25,9 @@ ModelChoiceField.prototype = Object.create( Formation.Field.prototype );
 Formation.Fields.ModelSingleChoice = function Field( params ){
   params = typeof params === "object" ? params : {};
   params.widget = params.widget || 'ModelSelect';
+  params.fromDOM = function( value ){
+    if ( this.field.model.collection.find( value ).count() > 0 ) return value;
+  };
   params.toDOM = function(){
     var instance = this.field.model.findOne({ _id: this.value });
     return instance;
@@ -57,14 +60,15 @@ Formation.Fields.ModelMultipleChoice = function Field( params ){
   params.widget = params.widget || 'ModelSelectMultiple';
   params.min = params.min && params.required === true ? params.min : 0;
   params.toDOM = function(){
-    var instances = this.field.model.find({ _id: { $in: this.value }});
+    var instances = this.model.find({ _id: { $in: this.value || [] }});
     return instances;
   };
   params.fromDOM = function( value ){
-    if ( _.isEmpty( value ) ){
-      return [];
-    }
-    return value;
+    var value = value;
+    if ( typeof( value ) === "number" || ! value ) return [];
+    if ( typeof( value ) === "string" ) value = [ value ];
+    if (! value instanceof Array ) return [];
+    return this.model.collection.find({ _id: { $in: value } }, { fields: { _id: 1 } }).fetch().map( function( mod ){ return mod._id });
   };
 
   params.defaultValue = params.defaultValue || function(){ return [] };

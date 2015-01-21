@@ -22,6 +22,9 @@ ChoiceField.prototype = Object.create( Formation.Field.prototype );
 Formation.Fields.SingleChoice = function Field( params ){
   params = typeof params === "object" ? params : {};
   params.widget = params.widget || 'SelectInput';
+  params.fromDOM = function( value ){
+    if ( _.contains( this.choices(), value ) ) return value;
+  }
 
   ChoiceField.call( this, params );
 
@@ -45,6 +48,9 @@ Formation.Fields.SingleChoice.prototype = Object.create( ChoiceField.prototype )
 Formation.Fields.MultipleChoice = function Field( params ){
   params = typeof params === "object" ? params : {};
   params.widget = params.widget || 'SelectMultiple';
+  params.fromDOM = function( value ){
+    return _.intersection( this.choices(), value );
+  }
 
   ChoiceField.call( this, params );
 
