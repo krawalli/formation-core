@@ -4,24 +4,28 @@ var Model   = Formation.Model;
 
 if ( Meteor.isServer ){
 
-  var basicDoc = {
-    requiredChar: "Name",
-    char: "Description",
-    requiredNumber: 0,
-    number: 1,
-    requiredTags: [ "art", "music", "science", "fun" ],
-    tags: [ "art", "music", "science", "fun" ],
-  };
+  function createTestDoc(){
+    var basicDoc = {
+      requiredChar: "Name",
+      char: "Description",
+      requiredNumber: 0,
+      number: 1,
+      requiredTags: [ "art", "music", "science", "fun" ],
+      tags: [ "art", "music", "science", "fun" ],
+    };
 
-  var arrayDoc = _.clone( basicDoc );
-  arrayDoc._id = "456";
+    var arrayDoc = _.clone( basicDoc );
+    arrayDoc._id = "456";
 
-  var oldDoc = _.clone( basicDoc );
-  _.extend( oldDoc, {
-    requiredNested: _.clone( basicDoc ),
-    nested:         _.clone( basicDoc ),
-    array:          [ arrayDoc ],
-  });
+    var oldDoc = _.clone( basicDoc );
+    _.extend( oldDoc, {
+      requiredNested: _.clone( basicDoc ),
+      nested:         _.clone( basicDoc ),
+      array:          [ arrayDoc ],
+    });
+
+    return oldDoc;
+  }
 
 
   // mock collection to return what we want
@@ -29,7 +33,7 @@ if ( Meteor.isServer ){
     this._name    = name;
     this.update   = function( selector, doc ){ return 1; };
     this.findOne  = function( selector, options ){
-      return oldDoc;
+      return createTestDoc();
     };
   };
   collection.prototype = Object.create( Meteor.Collection.prototype );
@@ -69,6 +73,7 @@ if ( Meteor.isServer ){
   testAsyncMulti( "Formation Core - Saving & Updating", [
 
     function simpleUpdateCall( test, expect ){
+      var oldDoc    = createTestDoc();
       var updateDoc = {
         char: null,
         requiredChar: null,
@@ -107,6 +112,8 @@ if ( Meteor.isServer ){
       };
 
       Meteor.call( "Formation.update", 'id', updateDoc, "formThings", expect( function( err, res ){
+        console.log( err );
+
         test.equal( res.requiredChar,   "Name",  "Expected new document <requiredChar> to be to be 'Name'." );
         test.equal( res.char,           null,    "Expected new document <char> to be to be null." );
         test.equal( res.requiredNumber, 0,       "Expected new document <requiredNumber> to be to be 0." );
@@ -123,21 +130,10 @@ if ( Meteor.isServer ){
         test.isTrue( _.isEmpty( _.difference( res.nested.requiredTags, oldDoc.nested.requiredTags )),  "Expected new document <requiredTags> to be unchanged" );
         test.isTrue( _.isEmpty( res.nested.tags ), "Expected new document <tags> to be to be empty array." );
 
-        var arrayDoc0 = _.find( res.array, function( doc ){
-          return doc._id === "123";
-        });
-
-        var arrayDoc1 = _.find( res.array, function( doc ){
-          return doc._id === "456";
-        });
-
-        var oldArrayDoc0 = _.find( updateDoc.array, function( doc ){
-          return doc._id === "123";
-        });
-
-        var oldArrayDoc1 = _.find( updateDoc.array, function( doc ){
-          return doc._id === "456";
-        });
+        var arrayDoc0     = _.find( res.array, function( doc ){ return doc._id === "123"; });
+        var arrayDoc1     = _.find( res.array, function( doc ){ return doc._id === "456";});
+        var oldArrayDoc0  = _.find( updateDoc.array, function( doc ){ return doc._id === "123"; });
+        var oldArrayDoc1  = _.find( updateDoc.array, function( doc ){ return doc._id === "456"; });
 
         test.equal( arrayDoc0.requiredChar,   "Name2",  "Expected new document <requiredChar> to be to be 'Name'." );
         test.equal( arrayDoc0.char,           null,    "Expected new document <char> to be to be null." );
@@ -159,67 +155,67 @@ if ( Meteor.isServer ){
 
 
 
-    // function removeAndAddToArray( test, expect ){
-    //   var updateDoc = {
-    //     array: [
-    //       {
-    //         _id: "123",
-    //         requiredChar: "Name2",
-    //         char: null,
-    //         requiredNumber: 1,
-    //         number: null,
-    //         requiredTags: [ "art", "music", "science" ],
-    //         tags: null,
-    //       },
-    //     ]
-    //   };
-    //
-    //   Meteor.call( "Formation.update", "id", updateDoc, "formThings", expect( function( err, res ){
-    //     var removedArray = _.find( res.array, function( doc ){ return doc._id === "456"; })
-    //     test.isUndefined( removedArray, "Array with _id should be removed from patched document" );
-    //
-    //     var addedArray = _.find( res.array, function( doc ){ return doc._id = "123"; });
-    //     test.isFalse( _.isEmpty( addedArray ), "Array with _id '123' should exist in patched document.")
-    //   }))
-    // },
+    function removeAndAddToArray( test, expect ){
+      var updateDoc = {
+        array: [
+          {
+            _id: "123",
+            requiredChar: "Name2",
+            char: null,
+            requiredNumber: 1,
+            number: null,
+            requiredTags: [ "art", "music", "science" ],
+            tags: null,
+          },
+        ]
+      };
+
+      Meteor.call( "Formation.update", "id", updateDoc, "formThings", expect( function( err, res ){
+        var removedArray = _.find( res.array, function( doc ){ return doc._id === "456"; })
+        test.isUndefined( removedArray, "Array with _id should be removed from patched document" );
+
+        var addedArray = _.find( res.array, function( doc ){ return doc._id = "123"; });
+        test.isFalse( _.isEmpty( addedArray ), "Array with _id '123' should exist in patched document.")
+      }))
+    },
 
 
 
-    // function restrictedRemoveAndAddToArrayDeny( test, expect ){
-    //   var restrictedFormSchema = _.clone( schema );
-    //   _.extend( restrictedFormSchema, {
-    //     array: [ Model({
-    //       schema: _.clone( schema ),
-    //       savable: function(){ return Meteor.userId() === "456"; }
-    //     }) ]
-    //   });
-    //   global.RestrictedFormThing = Model({
-    //     collection: new collection( "restrictedFormThings" ),
-    //     schema: restrictedFormSchema
-    //   });
-    //
-    //   var updateDoc = {
-    //     array: [
-    //       {
-    //         _id: "123",
-    //         requiredChar: "Name2",
-    //         char: null,
-    //         requiredNumber: 1,
-    //         number: null,
-    //         requiredTags: [ "art", "music", "science" ],
-    //         tags: null,
-    //       },
-    //     ]
-    //   };
-    //
-    //   Meteor.call( "Formation.update", "id", updateDoc, "restrictedFormThings", expect( function( err, res ){
-    //     var attemptedRemovedArray = _.find( res.array, function( doc ){ return doc._id === "456"; })
-    //     test.isFalse( _.isEmpty( attemptedRemovedArray ), "Array with _id should not be removed from patched document" );
-    //
-    //     var attemptedAddedArray = _.find( res.array, function( doc ){ return doc._id = "123"; });
-    //     test.isUndefined( attemptedAddedArray, "Array with _id '123' should not exist in patched document." );
-    //   }))
-    // },
+    function restrictedRemoveAndAddToArrayDeny( test, expect ){
+      var restrictedFormSchema = _.clone( schema );
+      _.extend( restrictedFormSchema, {
+        array: [ Model({
+          schema: _.clone( schema ),
+          savable: function(){ return Meteor.userId() === "456"; }
+        }) ]
+      });
+      global.RestrictedFormThing = Model({
+        collection: new collection( "restrictedFormThings" ),
+        schema: restrictedFormSchema
+      });
+
+      var updateDoc = {
+        array: [
+          {
+            _id: "123",
+            requiredChar: "Name2",
+            char: null,
+            requiredNumber: 1,
+            number: null,
+            requiredTags: [ "art", "music", "science" ],
+            tags: null,
+          },
+        ]
+      };
+
+      Meteor.call( "Formation.update", "id", updateDoc, "restrictedFormThings", expect( function( err, res ){
+        var attemptedRemovedArray = _.find( res.array, function( doc ){ return doc._id === "456"; })
+        test.isFalse( _.isEmpty( attemptedRemovedArray ), "Array with _id should not be removed from patched document" );
+
+        var attemptedAddedArray = _.find( res.array, function( doc ){ return doc._id === "123"; });
+        test.isUndefined( attemptedAddedArray, "Array with _id '123' should not exist in patched document." );
+      }))
+    },
 
 
 
@@ -255,7 +251,7 @@ if ( Meteor.isServer ){
         test.isUndefined( attemptedRemovedArray, "Array with _id '456' should be removed from patched document" );
 
         var attemptedAddedArray = _.find( res.array, function( doc ){ return doc._id = "123"; });
-        test.isUndefined( attemptedAddedArray, "Array with _id '123' should exist in patched document." );
+        test.isFalse( _.isEmpty( attemptedAddedArray ), "Array with _id '123' should exist in patched document." );
       }))
     },
 

@@ -13,7 +13,11 @@ ModelInstanceSuper = function( params ){
   * @param {Object} data      Data to create ModelInstance with
   */
   function ModelInstance( data ){
-    this._errors = new ReactiveVar( [] );
+    Object.defineProperty( this, "_errors", {
+      value: new ReactiveVar( [] ),
+      writable: true,
+      enumerable: false
+    });
     this.setValue( data );
     // if new instance, make sure all fields are in edit mode
     if ( this.isNew() ) this.editMode();
@@ -470,29 +474,31 @@ ModelInstanceSuper = function( params ){
     * @method getValue
     * @return Object
     */
-    Object.defineProperty( ModelInstance.prototype, "getUnsavableValues", { value: function getUnsavableValues(){
-      var self    = this;
-      var data    = {};
-      var fields  = self.fields();
-      if (! this.savable() ) return this.getValue();
-
-      for ( var field in fields ){
-        if ( self._model[ field ] instanceof Array && self[ field ] instanceof Array ){
-          data[ field ] = [];
-
-          for ( var i=0; i < self[ field ].length; i++ ){
-            data[ field ].push( self[ field ][ i ].getUnsavableValues() );
-          }
-
-        } else {
-          var val = fields[ field ].getUnsavableValues();
-          if ( val ) data[ field ] = val;
-        }
-      }
-
-      if ( this._parent && this._id ) data._id = this._id;
-      return data;
-    }})
+    // Object.defineProperty( ModelInstance.prototype, "getUnsavableValues", { value: function getUnsavableValues(){
+    //   var self    = this;
+    //   var data    = {};
+    //   var fields  = self.fields();
+    //   if (! this.savable() ) return this.getValue();
+    //
+    //   for ( var field in fields ){
+    //     if ( self._model[ field ] instanceof Array && self[ field ] instanceof Array ){
+    //       data[ field ] = [];
+    //
+    //       for ( var i=0; i < self[ field ].length; i++ ){
+    //         var item = self[ field ][ i ].getUnsavableValues();
+    //         if ( item ) data[ field ].push( item );
+    //       }
+    //
+    //     } else {
+    //       var val = fields[ field ].getUnsavableValues();
+    //       if ( val ) data[ field ] = val;
+    //     }
+    //   }
+    //
+    //   if ( _.isEmpty( data ) ) return;
+    //   if ( this._parent && this._id ) data._id = this._id;
+    //   return data;
+    // }})
   // }
 
   return ModelInstance;
