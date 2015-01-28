@@ -165,6 +165,7 @@ Formation.FieldInstance = function( params ){
         //   return undefined;
         // }
         if (! this.required && ! this.value && typeof( this.value ) !== "number" ) return null;
+        if ( Meteor.isServer && ! this.savable() ) return undefined;
         return this.value;
       }
     },

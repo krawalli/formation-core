@@ -76,16 +76,23 @@ ModelInstanceSuper = function( params ){
     /**
     * Check to see if model is editable by user; client-side only
     * @method editable
-    * @return Boolen
+    * @return Boolean
     */
     editable: { value: params.model.editable },
 
     /**
-    * Check to see if model is editable by user; client-side only
-    * @method editable
-    * @return Boolen
+    * Check to see if model is editable by user
+    * @method savable
+    * @return Boolean
     */
     savable: { value: params.model.savable },
+
+    /**
+    * Check to see if model (in array) is removable by user
+    * @method removable
+    * @return Boolean
+    */
+    removable: { value: params.model.removable },
 
     /**
     * If model is editable by user, toggle editMode
@@ -255,8 +262,9 @@ ModelInstanceSuper = function( params ){
         if ( err ){
           var errs = this._errors.get();
           errs.push( err );
-          this._errors.set( errs )
-          throw new Error( "Please check the form for errors" );
+          this._errors.set( errs );
+          console.log( err.message );
+          return;
         }
         this.setValue( res );
         if ( this.afterSave ) this.afterSave();
@@ -266,7 +274,7 @@ ModelInstanceSuper = function( params ){
       if ( this.isNew() ){
         if (! this._parent ) delete data._id;
         else _ensureId.call( this );
-        var objectId = this._model.collection.insert( data, saveCallback.bind( this ));
+        var objectId = Meteor.call( "Formation.insert", data, this._model.collection._name, saveCallback.bind( this ));
       } else {
         var objectId = Meteor.call( "Formation.update", this._id, data, this._model.collection._name, saveCallback.bind( this ));
       }
@@ -287,7 +295,7 @@ ModelInstanceSuper = function( params ){
       var fields  = self.fields();
       _ensureId.call( this )
 
-      if (! this.savable() && ! this._parent ) return;
+      if (! this.savable() && ! this._parent ) return data;
       // if (! this.savable() && this._parent ) return { _id: this._id };
 
       for ( var field in fields ){
@@ -467,39 +475,6 @@ ModelInstanceSuper = function( params ){
       throw new Error( "All virtual fields must be functions." );
     }
   }
-
-  // if ( Meteor.isServer ){
-    /**
-    * Return plain JavaScript object with values.  Blank, non-required values and their fields are not included
-    * @method getValue
-    * @return Object
-    */
-    // Object.defineProperty( ModelInstance.prototype, "getUnsavableValues", { value: function getUnsavableValues(){
-    //   var self    = this;
-    //   var data    = {};
-    //   var fields  = self.fields();
-    //   if (! this.savable() ) return this.getValue();
-    //
-    //   for ( var field in fields ){
-    //     if ( self._model[ field ] instanceof Array && self[ field ] instanceof Array ){
-    //       data[ field ] = [];
-    //
-    //       for ( var i=0; i < self[ field ].length; i++ ){
-    //         var item = self[ field ][ i ].getUnsavableValues();
-    //         if ( item ) data[ field ].push( item );
-    //       }
-    //
-    //     } else {
-    //       var val = fields[ field ].getUnsavableValues();
-    //       if ( val ) data[ field ] = val;
-    //     }
-    //   }
-    //
-    //   if ( _.isEmpty( data ) ) return;
-    //   if ( this._parent && this._id ) data._id = this._id;
-    //   return data;
-    // }})
-  // }
 
   return ModelInstance;
 

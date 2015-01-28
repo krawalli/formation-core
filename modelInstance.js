@@ -40,7 +40,7 @@ Formation.ModelInstance = function( params ){
     * @method delete
     */
     delete: { value: function(){
-        this._model.collection.remove( this._id );
+        Meteor.call( "Formation.remove", this._id, this._model.collection._name );
       }
     }
   });

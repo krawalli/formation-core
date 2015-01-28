@@ -116,6 +116,20 @@ Formation.Model = function( params ){
       break;
   }
 
+  var removable;
+  switch ( typeof( params.removable ) ){
+    case "boolean":
+      var boo = params.removable;
+      removable = function(){ return boo };
+      break;
+    case "function":
+      removable = params.removable;
+      break;
+    default:
+      removable = function(){ return true };
+      break;
+  }
+
   var hooks = {};
   hooks.beforeSave        = typeof( params.beforeSave )       === 'function' || typeof( params.beforeSave )       === 'undefined' ? params.beforeSave       : err( "beforeSave hook must be a function" );
   hooks.afterSave         = typeof( params.afterSave )        === 'function' || typeof( params.afterSave )        === 'undefined' ? params.afterSave        : err( "afterSave hook must be a function" );
@@ -186,6 +200,15 @@ Formation.Model = function( params ){
     * @type Function
     */
     savable: { value: savable },
+
+
+    /**
+    * Developer-set function to determine if model (in an array) is removable by user;
+    *  Context of the function you pass in will be a ModelInstance (i.e. use this.<field>.value to access fields values );
+    * @method editable
+    * @type Function
+    */
+    removable: { value: removable },
 
 
     /**
