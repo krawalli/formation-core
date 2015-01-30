@@ -16,15 +16,49 @@ Formation.FieldInstance = function( params ){
   function FieldInstance( value ){
     var self = this;
 
+    var attr = new ReactiveVar( _.clone( this.field.attributes ));
+    function setAttributes( attributes ){
+      var oldAttributes = this.field.attributes;
+      var attributes    = attributes || oldAttributes || {};
+
+      if      ( typeof( attributes.bootstrap ) === "boolean" )    attributes.bootstrap = attributes.bootstrap;
+      else if ( typeof( oldAttributes.bootstrap ) === "boolean" ) attributes.bootstrap = oldAttributes.bootstrap;
+      else attributes.bootstrap = true;
+
+      attributes.id     = attributes.id     || oldAttributes.id     || '';
+      attributes.class  = attributes.class  || oldAttributes.class  || '';
+
+      attributes.class      = attributes.class.replace( /form-control/ig, '' ).trim();
+      if ( attributes.bootstrap ) attributes.class += ' form-control';
+      attributes.class = attributes.class.trim();
+
+      attributes.name   = attributes.name   || oldAttributes.name   || this.field.label || '';
+      attributes.role   = attributes.role   || oldAttributes.role   || '';
+      attributes.style  = attributes.style  || oldAttributes.style  || '';
+
+      if      ( typeof( attributes.horizontal ) === "boolean" )     attributes.horizontal = attributes.horizontal;
+      else if ( typeof( oldAttributes.horizontal ) === "boolean" )  attributes.horizontal = oldAttributes.horizontal
+      else attributes.horizontal = true;
+
+      attr.set( attributes );
+      return this;
+    }
+    function getAttributes(){
+      return attr.get();
+    }
+
+
     Object.defineProperties( this, {
       /**
       * Actual value of field
       * @property value
       */
-      value: { value: value === undefined || value === null ? self.field.defaultValue() : value, enumerable: true, writable: true },
-      valueOf: { value: function(){ return self.value } },
-     	_editMode: { value: new ReactiveVar( false ) },
-      _errors: { value: new ReactiveVar( [] ) }
+      value:          { value: value === undefined || value === null ? self.field.defaultValue() : value, enumerable: true, writable: true },
+      valueOf:        { value: function(){ return self.value } },
+     	_editMode:      { value: new ReactiveVar( false ) },
+      _errors:        { value: new ReactiveVar( [] ) },
+      attributes:     { value: getAttributes },
+      setAttributes:  { value: setAttributes },
     });
   }
 

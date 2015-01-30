@@ -13,15 +13,54 @@ ModelInstanceSuper = function( params ){
   * @param {Object} data      Data to create ModelInstance with
   */
   function ModelInstance( data ){
-    Object.defineProperty( this, "_errors", {
-      value: new ReactiveVar( [] ),
-      writable: true,
-      enumerable: false
+    var attrCopy = _.clone( this._model.attributes );
+    var attr = new ReactiveVar( attrCopy );
+
+    function setAttributes( attributes ){
+      var attributes        = attributes || {};
+      var oldAttributes     = _.clone( this._model.attributes );
+
+      if      ( typeof( attributes.bootstrap )  === "boolean" ) attributes.bootstrap = attributes.bootstrap;
+      else if ( typeof( oldAttributes.bootstrap ) === "boolean" ) attributes.bootstrap = oldAttributes.bootstrap;
+      else attributes.bootstrap = true;
+
+      attributes.class      = attributes.class || oldAttributes.class || '';
+      attributes.class      = attributes.class.replace( /form-control/ig, '' ).trim();
+      if ( attributes.bootstrap ) attributes.class += " form-control";
+      attributes.class = attributes.class.trim();
+
+      if      ( typeof( attributes.horizontal )  === "boolean" ) attributes.horizontal = attributes.horizontal;
+      else if ( typeof( oldAttributes.horizontal ) === "boolean" ) attributes.horizontal = oldAttributes.horizontal;
+      else attributes.horizontal = true;
+
+      var schema = this._model;
+      for ( var field in schema ){
+        if ( schema[ field ] instanceof Array ){
+          for ( var i=0; i < this[ field ].length; i++ ){
+            this[ field ][ i ].setAttributes( attributes );
+          }
+        } else {
+          this[ field ].setAttributes( attributes );
+        }
+      }
+
+      attr.set( attributes );
+      return this;
+    }
+    function getAttributes(){
+      return attr.get();
+    }
+
+    Object.defineProperties( this, {
+      _errors:        { value: new ReactiveVar( [] ), writable: true, enumerable: false },
+      attributes:     { value: getAttributes },
+      setAttributes:  { value: setAttributes },
     });
+
     this.setValue( data );
     // if new instance, make sure all fields are in edit mode
     if ( this.isNew() ) this.editMode();
-
+    this.setAttributes();
   }
 
 
@@ -252,7 +291,7 @@ ModelInstanceSuper = function( params ){
     * @method save
     * @return Number
     */
-    save: { value: function save( params, callback ){
+    save: { value: function save( callback ){
       if ( this.beforeSave ) this.beforeSave();
       this.validate();
 
@@ -268,7 +307,7 @@ ModelInstanceSuper = function( params ){
         }
         this.setValue( res );
         if ( this.afterSave ) this.afterSave();
-        if ( callback ) callback( err, res );
+        if ( typeof( callback ) === "function" ) callback( err, res );
       }
 
       if ( this.isNew() ){
@@ -477,7 +516,6 @@ ModelInstanceSuper = function( params ){
   }
 
   return ModelInstance;
-
 };
 
 

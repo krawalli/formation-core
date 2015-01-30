@@ -137,6 +137,29 @@ Formation.Model = function( params ){
   hooks.afterValidation   = typeof( params.afterValidation )  === 'function' || typeof( params.afterValidation )  === 'undefined' ? params.afterValidation  : err( "afterValidation hook must be a function" );
   hooks.modelValidator    = typeof( params.modelValidator )   === 'function' || typeof( params.modelValidator )   === 'undefined' ? params.modelValidator   : err( "modelValidator hook must be a function" );
 
+  var attributes        = params.attributes || {};
+
+  function setAttributes( attrs ){
+    if ( typeof( attrs.bootstrap )  === "boolean" ) attributes.bootstrap = attrs.bootstrap;
+    else attributes.bootstrap = typeof( attributes.bootstrap ) === "boolean" ? attributes.bootstrap : true;
+
+    attributes.class  = attrs.class  || attributes.class  || '';
+    attributes.class  = attributes.class.replace( /form-control/ig, '' ).trim();
+    if ( attributes.bootstrap ) attributes.class += ' form-control';
+    attributes.class = attributes.class.trim();
+
+    if      ( typeof( attrs.horizontal ) === "boolean" )        attributes.horizontal = attrs.horizontal;
+    else if ( typeof( attributes.horizontal ) === "boolean" )   attributes.horizontal = attributes.horizontal;
+    else attributes.horizontal = true;
+
+    return this;
+  }
+
+  setAttributes( attributes );
+
+  function getAttributes(){
+    return attributes;
+  }
 
   /**
   * Make a Model for a form/DB document to adhere to and validate against
@@ -218,6 +241,22 @@ Formation.Model = function( params ){
     * @type Object
     */
     hooks: { value: hooks },
+
+
+    /**
+    * Object attributes to be distributed down to each field
+    * @property attributes
+    * @type Object
+    */
+    attributes: { get: getAttributes },
+
+
+    /**
+    * Object attributes to be distributed down to each field
+    * @property attributes
+    * @type Object
+    */
+    setAttributes: { value: setAttributes },
 
 
     /**
@@ -350,6 +389,10 @@ Formation.Model = function( params ){
   var schema = params.schema || err( 'Please add a schema to this model' );
   for ( field in schema ){
     Object.defineProperty( model, field, { value: schema[ field ], enumerable: true });
+    if ( model[ field ] instanceof Array )
+      model[ field ][ 0 ].setAttributes( model.attributes );
+    else
+    model[ field ].setAttributes( model.attributes );
   }
 
   return model;
