@@ -16,8 +16,6 @@ Formation.ModelInstance = function( params ){
   function ModelInstance( data ){
     var data = arguments[ 0 ] || {};
 
-
-
     Object.defineProperty( this, '_editMode', {
       value: new ReactiveVar( false ),
       writable: true,
@@ -35,7 +33,6 @@ Formation.ModelInstance = function( params ){
   }
 
   ModelInstance.prototype = Object.create( superinstance.prototype );
-  ModelInstance.prototype.constructor = ModelInstance;
 
   Object.defineProperties( ModelInstance.prototype, {
 

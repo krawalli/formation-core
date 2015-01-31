@@ -112,7 +112,7 @@ if ( Meteor.isServer ){
       };
 
       Meteor.call( "Formation.update", 'id', updateDoc, "formThings", expect( function( err, res ){
-        console.log( err );
+        if ( err ) console.log( err );
 
         test.equal( res.requiredChar,   "Name",  "Expected new document <requiredChar> to be to be 'Name'." );
         test.equal( res.char,           null,    "Expected new document <char> to be to be null." );

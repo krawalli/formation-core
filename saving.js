@@ -20,7 +20,7 @@ if ( Meteor.isServer ){
       var instance        = new model.instance( doc );
       if (! instance.savable() )
         throw new Meteor.Error( "InadequatePermission", "You do not have permission to complete this action" );
-      
+
       var patchedInstance = patch( prevInstance, instance );
 
       try {
