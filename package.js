@@ -1,7 +1,7 @@
 Package.describe({
   name: "quietcreep:formation-core",
   summary: "Core objects for Formation for Meteor",
-  version: "2.0.2_1",
+  version: "2.0.2_2",
   git: "http://github.com/quietcreep/formation-core",
   documentation: null,
 });

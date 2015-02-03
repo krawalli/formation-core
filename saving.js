@@ -57,6 +57,7 @@ if ( Meteor.isServer ){
       if (! instance.savable() )
         throw new Meteor.Error( "InadequatePermission", "You do not have permission to complete this action" );
 
+
       try {
         instance.validate();
         if ( instance.beforeSave ) instance.beforeSave();
@@ -64,6 +65,7 @@ if ( Meteor.isServer ){
         if ( instance.afterSave ) instance.afterSave();
 
       } catch( err ){
+        console.log( err );
         console.log( instance.getAllErrors() );
         console.log( instance.errors() );
         throw new Meteor.Error( "ValidationError", "Please check this form for errors" );

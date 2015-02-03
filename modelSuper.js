@@ -13,12 +13,43 @@ ModelInstanceSuper = function( params ){
   * @param {Object} data      Data to create ModelInstance with
   */
   function ModelInstance( data ){
-    var attrCopy = _.clone( this._model.attributes );
-    var attr = new ReactiveVar( attrCopy );
+    var attrCopy  = _.clone( this._model.attributes );
+    var attr      = new ReactiveVar( attrCopy );
+    var schema    = this._model;
+    var data      = data || {};
+
+    // iterate through fields and add data
+    for ( var field in schema ){
+      if ( schema[ field ] instanceof Array ){
+        var model     = schema[ field ][ 0 ];
+        data[ field ] = data[ field ] instanceof Array ? data[ field ] : [];
+        this[ field ] = [];
+
+        for ( var i=0; i < data[ field ].length; i++ ){
+          if ( this.isNew() )
+            this[ field ][ i ] = new model.newInstance( data[ field ][ i ] );
+          else
+            this[ field ][ i ] = new model.instance( data[ field ][ i ] );
+
+          if (! this[ field ][ i ]._parent )
+            Object.defineProperty( this[ field ][ i ], "_parent", { value: this });
+          if (! this[ field ][ i ]._id )
+            Object.defineProperty( this[ field ][ i ], "_id", { value: data[ field ][ i ]._id || ( new Mongo.ObjectID ).toJSONValue() } )
+
+          this[ field ][ i ].setAttributes();
+        }
+      } else {
+        this[ field ] = new schema[ field ].instance( data[ field ] );
+        this[ field ]._editMode.set( this.isNew() );
+        Object.defineProperty( this[ field ], "_parent", { value: this });
+        this[ field ].setAttributes();
+      }
+    }
 
     function setAttributes( attributes ){
       var attributes        = attributes || {};
       var oldAttributes     = _.clone( this._model.attributes );
+      var schema            = this._model;
 
       if      ( typeof( attributes.bootstrap )  === "boolean" ) attributes.bootstrap = attributes.bootstrap;
       else if ( typeof( oldAttributes.bootstrap ) === "boolean" ) attributes.bootstrap = oldAttributes.bootstrap;
@@ -33,33 +64,16 @@ ModelInstanceSuper = function( params ){
       else if ( typeof( oldAttributes.horizontal ) === "boolean" ) attributes.horizontal = oldAttributes.horizontal;
       else attributes.horizontal = true;
 
-      var schema = this._model;
-      if (! data ) return this;
 
-      // iterate through fields and add data
       for ( var field in schema ){
         if ( schema[ field ] instanceof Array ){
           var model     = schema[ field ][ 0 ];
-          data[ field ] = data[ field ] || [];
           this[ field ] = [];
 
-          for ( var i=0; i < data[ field ].length; i++ ){
-            if ( this.isNew() )
-              this[ field ][ i ] = new model.newInstance( data[ field ][ i ] );
-            else
-              this[ field ][ i ] = new model.instance( data[ field ][ i ] );
-
-            if (! this[ field ][ i ]._parent )
-              Object.defineProperty( this[ field ][ i ], "_parent", { value: this });
-            if (! this[ field ][ i ]._id )
-              Object.defineProperty( this[ field ][ i ], "_id", { value: data[ field ][ i ]._id || ( new Mongo.ObjectID ).toJSONValue() } )
-
+          for ( var i=0; i < this[ field ].length; i++ ){
             this[ field ][ i ].setAttributes( attributes );
           }
         } else {
-          this[ field ] = new schema[ field ].instance( data[ field ] );
-          this[ field ]._editMode.set( this.isNew() );
-          Object.defineProperty( this[ field ], "_parent", { value: this });
           this[ field ].setAttributes( attributes );
         }
       }
@@ -79,7 +93,7 @@ ModelInstanceSuper = function( params ){
 
     // if new instance, make sure all fields are in edit mode
     if ( this.isNew() ) this.editMode();
-    this.setAttributes();
+    // this.setAttributes();
   }
 
 
@@ -324,7 +338,7 @@ ModelInstanceSuper = function( params ){
           console.log( err.message );
           return;
         }
-        this.setValue( res );
+        if (! this.isNew() )  this.setValue( res );
         if ( this.afterSave ) this.afterSave();
         if ( typeof( callback ) === "function" ) callback( err, res );
       }
