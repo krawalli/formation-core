@@ -21,7 +21,7 @@ if ( Meteor.isServer ){
       if (! instance.savable() )
         throw new Meteor.Error( "InadequatePermission", "You do not have permission to complete this action" );
 
-      var patchedInstance = patch( prevInstance, instance );
+      var patchedInstance = prevInstance.setValue( instance );
 
       try {
         patchedInstance.validate();
@@ -92,50 +92,3 @@ if ( Meteor.isServer ){
     }
   })
 }
-
-
-
-function patch( doc, patchDoc ){
-  var doc = doc;
-
-  if ( patchDoc || patchDoc.value === null ){
-    if ( doc instanceof Array || patchDoc instanceof Array ){
-      patchDoc = patchDoc || [];
-      if (! doc ) doc = patchDoc;
-
-      var newDocs = [];
-      patchDoc.forEach( function( item, index, array ){
-        var oldItem = _.find( doc, function( i ){ return i._id === item._id });
-        if (! oldItem && item.savable() ) newDocs.push( item );
-        else if ( oldItem ) newDocs.push( patch( oldItem, item ) );
-      })
-      doc.forEach( function( item, index, array ){
-        var newItem = _.find( newDocs, function( i ){ return i._id === item._id });
-        if (( ! item.savable() || ! item.removable() ) && ! newItem ) newDocs.push( item );
-      })
-
-      doc = newDocs;
-
-    } else if ( doc.__name__ === "ModelInstance" ){
-      if (! doc.savable() ) return doc;
-
-      patchDoc  = patchDoc || {};
-      doc       = doc || {};
-
-      for ( var field in patchDoc ){
-        doc[ field ] = patch( doc[ field ], patchDoc[ field ] );
-      }
-
-    } else {
-      if (! doc.savable() ) return doc;
-      var val = patchDoc.getValue();
-      doc.value = val === undefined ? doc.value : val;
-    }
-  }
-
-  return doc;
-}
-
-
-
-Formation.patch = patch;

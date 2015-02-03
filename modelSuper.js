@@ -34,12 +34,32 @@ ModelInstanceSuper = function( params ){
       else attributes.horizontal = true;
 
       var schema = this._model;
+      if (! data ) return this;
+
+      // iterate through fields and add data
       for ( var field in schema ){
         if ( schema[ field ] instanceof Array ){
-          for ( var i=0; i < this[ field ].length; i++ ){
+          var model     = schema[ field ][ 0 ];
+          data[ field ] = data[ field ] || [];
+          this[ field ] = [];
+
+          for ( var i=0; i < data[ field ].length; i++ ){
+            if ( this.isNew() )
+              this[ field ][ i ] = new model.newInstance( data[ field ][ i ] );
+            else
+              this[ field ][ i ] = new model.instance( data[ field ][ i ] );
+
+            if (! this[ field ][ i ]._parent )
+              Object.defineProperty( this[ field ][ i ], "_parent", { value: this });
+            if (! this[ field ][ i ]._id )
+              Object.defineProperty( this[ field ][ i ], "_id", { value: data[ field ][ i ]._id || ( new Mongo.ObjectID ).toJSONValue() } )
+
             this[ field ][ i ].setAttributes( attributes );
           }
         } else {
+          this[ field ] = new schema[ field ].instance( data[ field ] );
+          this[ field ]._editMode.set( this.isNew() );
+          Object.defineProperty( this[ field ], "_parent", { value: this });
           this[ field ].setAttributes( attributes );
         }
       }
@@ -57,7 +77,6 @@ ModelInstanceSuper = function( params ){
       setAttributes:  { value: setAttributes },
     });
 
-    this.setValue( data );
     // if new instance, make sure all fields are in edit mode
     if ( this.isNew() ) this.editMode();
     this.setAttributes();
@@ -324,6 +343,15 @@ ModelInstanceSuper = function( params ){
 
 
     /**
+    * Determines if model has any retrievable value
+    * @method isEmpty
+    * @return Boolean
+    */
+    isEmpty: { value: function isEmpty(){
+      return _.chain( this.getValue() ).values().compact().isEmpty().value();
+    }},
+
+    /**
     * Return plain JavaScript object with values.  Blank, non-required values and their fields are not included
     * @method getValue
     * @return Object
@@ -335,7 +363,6 @@ ModelInstanceSuper = function( params ){
       _ensureId.call( this )
 
       if (! this.savable() && ! this._parent ) return data;
-      // if (! this.savable() && this._parent ) return { _id: this._id };
 
       for ( var field in fields ){
         if ( self._model[ field ] instanceof Array && self[ field ] instanceof Array ){
@@ -345,7 +372,7 @@ ModelInstanceSuper = function( params ){
             if (! self[ field ][ i ].isNew() ){
               data[ field ].push( self[ field ][ i ].getValue() );
 
-            } else if ( self[ field ][ i ]._model.required || self[ field ][ i ].getValue() !== undefined ){
+            } else if ( self[ field ][ i ]._model.required || ! self[ field ][ i ].isEmpty() ){
               data[ field ].push( self[ field ][ i ].getValue() );
             }
           }
@@ -355,16 +382,9 @@ ModelInstanceSuper = function( params ){
         }
       }
 
-      for ( var field in data ){
-        if ( ( data[ field ] === undefined || data[ field ] === null ) && fields[ field ].required ){
-          delete data[ field ];
-        }
-      }
-
-
-      if (! this._model.required && _.isEmpty( _.compact( _.values( data ) ) ) && this.isNew() ){
+      if (! this._model.required && _.chain( data ).values().compact().isEmpty().value() && this.isNew() )
         return;
-      }
+
 
       if ( this._parent && this._id ) data._id = this._id;
 
@@ -378,43 +398,58 @@ ModelInstanceSuper = function( params ){
     * @param {Object} data
     * @return ModelInstance
     */
-    setValue: { value: function setValue( data ){
-      var schema = this._model;
-      if (! data ) return this;
+    setValue: { value: function setValue( patch ){
+      var model = this._model;
+      if (! patch ) return;
+      if (! patch.__name__ ) patch = new model.instance( patch );
 
-      // iterate through fields and add data
-      for ( var field in schema ){
-        if ( schema[ field ] instanceof Array ){
-          data[ field ] = data[ field ] || [];
-          this[ field ] = [];
+      for ( field in model ){
+        var doc       = this[ field ];
+        var patchDoc  = patch[ field ];
 
-          for ( var i=0; i < data[ field ].length; i++ ){
-            if ( this.isNew() ){
-              this[ field ][ i ] = new schema[ field ][ 0 ].newInstance( data[ field ][ i ] );
-            } else {
-              this[ field ][ i ] = new schema[ field ][ 0 ].instance( data[ field ][ i ] );
+        if ( model[ field ] instanceof Array ){
+          patchDoc = patchDoc || [];
+          if (! doc ) doc = patchDoc;
+          var newDocs = [];
+
+          // iterate over items from new doc;
+          // find any items new to doc
+          patchDoc.forEach( function( item, index, array ){
+            var oldItem = _.find( doc, function( i ){ return i._id === item._id });
+            if (! oldItem ){
+              var newItem = new model[ field ][ 0 ].newInstance( item.getValue() );
+              if (! newItem._parent ) Object.defineProperty( newItem, "_parent", { value: this });
+              if (! newItem._id )     Object.defineProperty( newItem, "_id", { value: ( new Mongo.ObjectID ).toJSONValue() } )
+              if ( item.savable() )   newDocs.push( item );
+
+            } else if ( oldItem ){
+              newDocs.push( oldItem.setValue( item ) );
             }
-            if (! this[ field ][ i ]._parent )
-              Object.defineProperty( this[ field ][ i ], "_parent", { value: this });
-            if (! this[ field ][ i ]._id )
-              Object.defineProperty( this[ field ][ i ], "_id", { value: data[ field ][ i ]._id || ( new Mongo.ObjectID ).toJSONValue() } )
-          }
+          })
 
-          if ( _.isEmpty( this[ field ] ) && ! Meteor.isServer ){
-            for ( var i=0; i < schema[ field ][ 0 ].extra; i++ ){
-              this[ field ].push( new schema[ field ][ 0 ].newInstance );
+          // iterate over old items;
+          // find old items that have been removed from old doc;
+          // remove if permissible; else add/retain item;
+          doc.forEach( function( item, index, array ){
+            var newItem = _.find( newDocs, function( i ){ return i._id === item._id });
+            if (( ! item.savable() || ! item.removable() ) && ! newItem )
+              newDocs.push( item );
+          })
+
+          if ( _.isEmpty( newDocs ) && ! Meteor.isServer ){
+            for ( var i=0; i < model[ field ][ 0 ].extra; i++ ){
+              this[ field ].push( new model[ field ][ 0 ].newInstance );
               Object.defineProperty( this[ field ][ i ], "_parent", { value: this });
               Object.defineProperty( this[ field ][ i ], "_id", { value: ( new Mongo.ObjectID ).toJSONValue() } )
             }
           }
-        } else {
-          if ( this[ field ] ){
-            this[ field ].setValue( data[ field ] ) || this[ field ].getValue();
-          } else {
-            this[ field ] = new schema[ field ].instance( data[ field ] );
-            this[ field ]._editMode.set( this.isNew() );
-            Object.defineProperty( this[ field ], "_parent", { value: this });
-          }
+
+          this[ field ] = newDocs;
+
+        } else if ( model[ field ].__name__ === "Model" || model[ field ].__name__ === "Field" ){
+          var nVal = patchDoc.getValue();
+          if ( doc.savable() && nVal !== undefined )
+            doc.setValue( nVal );
         }
       }
 

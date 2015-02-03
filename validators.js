@@ -138,8 +138,8 @@ Object.defineProperty( Formation.Validators, "NumberArray", {
 Object.defineProperty( Formation.Validators, "ValueIsInChoices", {
   value: function( choices ){
     return Match.Where( function( value ){
-      if ( value !== undefined && ! _.contains( choices, value ) ){
-        throw new Error( value.toString() + ' is not an available choice' );
+      if ( ! _.contains( choices, value ) ){
+        throw new Error( value + ' is not an available choice' );
       } else {
         return true;
       }

@@ -14,9 +14,10 @@ Formation.FieldInstance = function( params ){
   * @param {String/Number/Date} value
   */
   function FieldInstance( value ){
-    var self = this;
+    var self  = this;
+    var attr  = new ReactiveVar( _.clone( this.field.attributes ));
+    var value = value === undefined || value === null ? this.field.defaultValue() : value;
 
-    var attr = new ReactiveVar( _.clone( this.field.attributes ));
     function setAttributes( attributes ){
       var oldAttributes = this.field.attributes;
       var attributes    = attributes || oldAttributes || {};
@@ -43,6 +44,7 @@ Formation.FieldInstance = function( params ){
       attr.set( attributes );
       return this;
     }
+
     function getAttributes(){
       return attr.get();
     }
@@ -53,7 +55,7 @@ Formation.FieldInstance = function( params ){
       * Actual value of field
       * @property value
       */
-      value:          { value: value === undefined || value === null ? self.field.defaultValue() : value, enumerable: true, writable: true },
+      value:          { value: value, enumerable: true, writable: true },
       valueOf:        { value: function(){ return self.value } },
      	_editMode:      { value: new ReactiveVar( false ) },
       _errors:        { value: new ReactiveVar( [] ) },
@@ -212,7 +214,7 @@ Formation.FieldInstance = function( params ){
     * @return Object
     */
     setValue: { value: function setValue( value ){
-      if ( value ) this.value = value;
+      if ( this.savable() ) this.value = value;
       return this.value;
     }}
 

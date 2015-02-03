@@ -109,6 +109,8 @@ Formation.Field = function Field( params ){
   if ( Meteor.isServer ) params.editable = function(){ return true };
 
   Object.defineProperties( this, {
+    __name__: { value: "Field" },
+
     /**
     * Label for field
     * @property label
