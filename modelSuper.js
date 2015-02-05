@@ -311,7 +311,6 @@ ModelInstanceSuper = function( params ){
 function _ensureId( dataId ){
   var dataId  = dataId || null;
   var newId   = typeof( dataId ) === 'string' ? dataId : ( new Mongo.ObjectID ).toJSONValue();
-
   if (! this._id && this._parent )
     Object.defineProperty( this, "_id", { value: newId })
 }
@@ -484,7 +483,7 @@ function setArrayValue( modelField, fieldName, patch ){
       var newItem = new modelField.newInstance( item.getValue() );
       if ( newItem.savable() ) newDocs.push( newItem );
       _ensureParent.call( this, newItem );
-      _ensureId.call( newItem );
+      _ensureId.call( newItem, patch[ fieldName ][ index ]._id );
 
     } else if ( oldItem ){
       oldItem.setValue( item )
