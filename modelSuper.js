@@ -2,10 +2,7 @@
 * @module Formation
 * @submodule ModelInstance
 */
-
 ModelInstanceSuper = function( params ){
-
-
   /**
   * Model Super Class; not usually used by end dev
   * @class ModelSuper
@@ -28,7 +25,6 @@ ModelInstanceSuper = function( params ){
 
     if ( this.isNew() ) this.editMode();
   }
-
 
   Object.defineProperties( ModelInstance.prototype, {
     __name__: { value: params.__name__ },
@@ -123,7 +119,6 @@ ModelInstanceSuper = function( params ){
       return this._editMode.get();
     }},
 
-
     /**
     * Model-level errors (as opposed to field-level errors)
     * @method errors
@@ -132,7 +127,6 @@ ModelInstanceSuper = function( params ){
     errors: { value: function errors(){
       return this._errors.get();
     }},
-
 
     /**
     * All errors, field and model-level
@@ -144,7 +138,6 @@ ModelInstanceSuper = function( params ){
       errors = _traverseModel.call( this, setArrayErrors, setModelErrors, setFieldErrors, errors );
       return errors;
     }},
-
 
     /**
     * If model has errors field or model-level, return true; else false
@@ -188,7 +181,6 @@ ModelInstanceSuper = function( params ){
       return this.__name__ === 'NewModelInstance';
     }},
 
-
     /**
     * Save to database; returns number of docs changed (either 1 on success or 0 on fail)
     * @method save
@@ -225,7 +217,6 @@ ModelInstanceSuper = function( params ){
       return objectId;
     }},
 
-
     /**
     * Determines if model has any retrievable value
     * @method isEmpty
@@ -252,7 +243,6 @@ ModelInstanceSuper = function( params ){
       return data;
     }},
 
-
     /**
     * Set instance data with plain JavaScript object.
     * @method setValue
@@ -266,7 +256,6 @@ ModelInstanceSuper = function( params ){
       _traverseModel.call( this, setArrayValue, setModelValue, setModelValue, patch );
       return this;
     }},
-
 
     /**
     * Validate instance; returns undefined on success; throws errors on failure
@@ -328,12 +317,10 @@ function _ensureId( dataId ){
 }
 
 
-
 function _ensureParent( field ){
   if (! field._parent )
     Object.defineProperty( field, "_parent", { value: this })
 }
-
 
 
 function _traverseModel( withArray, withModel, withField, data ){
@@ -361,7 +348,6 @@ function _traverseModel( withArray, withModel, withField, data ){
 }
 
 
-
 function initArray( item, fieldName, data ){
   data[ fieldName ]     = data[ fieldName ] instanceof Array ? data[ fieldName ] : [];
   this[ fieldName ]     = [];
@@ -381,7 +367,6 @@ function initArray( item, fieldName, data ){
 }
 
 
-
 function initFieldOrModel( item, fieldName, data ){
   var fieldData     = data[ fieldName ];
   this[ fieldName ] = new item.instance( fieldData );
@@ -389,7 +374,6 @@ function initFieldOrModel( item, fieldName, data ){
   _ensureParent.call( this, this[ fieldName ] );
   this[ fieldName ].setAttributes();
 }
-
 
 
 function setAttributes( attributes ){
@@ -424,7 +408,6 @@ function setAttributes( attributes ){
   this._attr.set( attributes );
   return this;
 }
-
 
 
 function getAttributes(){
@@ -499,7 +482,9 @@ function setArrayValue( modelField, fieldName, patch ){
     var oldItem = _.find( doc, function( i ){ return i._id === item._id });
     if (! oldItem ){
       var newItem = new modelField.newInstance( item.getValue() );
-      if ( item.savable() )   newDocs.push( item );
+      if ( newItem.savable() ) newDocs.push( newItem );
+      _ensureParent.call( this, newItem );
+      _ensureId.call( newItem );
 
     } else if ( oldItem ){
       oldItem.setValue( item )
