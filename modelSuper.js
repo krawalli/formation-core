@@ -14,81 +14,42 @@ ModelInstanceSuper = function( params ){
   */
   function ModelInstance( data ){
     var attrCopy  = _.clone( this._model.attributes );
-    var attr      = new ReactiveVar( attrCopy );
     var schema    = this._model;
     var data      = data || {};
 
     // iterate through fields and add data
-    for ( var field in schema ){
-      if ( schema[ field ] instanceof Array ){
-        var model     = schema[ field ][ 0 ];
-        data[ field ] = data[ field ] instanceof Array ? data[ field ] : [];
-        this[ field ] = [];
+    // for ( var field in schema ){
+    //   if ( schema[ field ] instanceof Array ){
+    //     var model     = schema[ field ][ 0 ];
+    //     data[ field ] = data[ field ] instanceof Array ? data[ field ] : [];
+    //     this[ field ] = [];
+    //
+    //     for ( var i=0; i < data[ field ].length; i++ ){
+    //       if ( this.isNew() )
+    //         this[ field ].push( new model.newInstance( data[ field ][ i ] ));
+    //       else
+    //         this[ field ].push( new model.instance( data[ field ][ i ] ));
+    //
+    //       _ensureParent.call( this, this[ field ][ i ] );
+    //       _ensureId.call( this[ field ][ i ], data[ field ][ i ]._id );
+    //       this[ field ][ i ].setAttributes();
+    //     }
+    //
+    //   } else {
+    //     this[ field ] = new schema[ field ].instance( data[ field ] );
+    //     this[ field ]._editMode.set( this.isNew() );
+    //     _ensureParent.call( this, this[ field ] );
+    //     this[ field ].setAttributes();
+    //   }
+    // }
 
-        for ( var i=0; i < data[ field ].length; i++ ){
-          if ( this.isNew() )
-            this[ field ][ i ] = new model.newInstance( data[ field ][ i ] );
-          else
-            this[ field ][ i ] = new model.instance( data[ field ][ i ] );
-
-          if (! this[ field ][ i ]._parent )
-            Object.defineProperty( this[ field ][ i ], "_parent", { value: this });
-          if (! this[ field ][ i ]._id )
-            Object.defineProperty( this[ field ][ i ], "_id", { value: data[ field ][ i ]._id || ( new Mongo.ObjectID ).toJSONValue() } )
-
-          this[ field ][ i ].setAttributes();
-        }
-      } else {
-        this[ field ] = new schema[ field ].instance( data[ field ] );
-        this[ field ]._editMode.set( this.isNew() );
-        Object.defineProperty( this[ field ], "_parent", { value: this });
-        this[ field ].setAttributes();
-      }
-    }
-
-    function setAttributes( attributes ){
-      var attributes        = attributes || {};
-      var oldAttributes     = _.clone( this._model.attributes );
-      var schema            = this._model;
-
-      if      ( typeof( attributes.bootstrap )  === "boolean" ) attributes.bootstrap = attributes.bootstrap;
-      else if ( typeof( oldAttributes.bootstrap ) === "boolean" ) attributes.bootstrap = oldAttributes.bootstrap;
-      else attributes.bootstrap = true;
-
-      attributes.class      = attributes.class || oldAttributes.class || '';
-      attributes.class      = attributes.class.replace( /form-control/ig, '' ).trim();
-      if ( attributes.bootstrap ) attributes.class += " form-control";
-      attributes.class = attributes.class.trim();
-
-      if      ( typeof( attributes.horizontal )  === "boolean" ) attributes.horizontal = attributes.horizontal;
-      else if ( typeof( oldAttributes.horizontal ) === "boolean" ) attributes.horizontal = oldAttributes.horizontal;
-      else attributes.horizontal = true;
-
-
-      for ( var field in schema ){
-        if ( schema[ field ] instanceof Array ){
-          var model     = schema[ field ][ 0 ];
-          this[ field ] = [];
-
-          for ( var i=0; i < this[ field ].length; i++ ){
-            this[ field ][ i ].setAttributes( attributes );
-          }
-        } else {
-          this[ field ].setAttributes( attributes );
-        }
-      }
-
-      attr.set( attributes );
-      return this;
-    }
-    function getAttributes(){
-      return attr.get();
-    }
+    _traverseModel.call( this, initArray, initFieldOrModel, initFieldOrModel, data );
 
     Object.defineProperties( this, {
+      _attr:          { value: new ReactiveVar( attrCopy ) },
       _errors:        { value: new ReactiveVar( [] ), writable: true, enumerable: false },
-      attributes:     { value: getAttributes },
-      setAttributes:  { value: setAttributes },
+      attributes:     { value: getAttributes.bind( this ) },
+      setAttributes:  { value: setAttributes.bind( this ) },
     });
 
     // if new instance, make sure all fields are in edit mode
@@ -174,18 +135,18 @@ ModelInstanceSuper = function( params ){
     */
     editMode:  { value: function editMode( boo ){
         if ( this.editable() ){
-          var fields = this.fields();
+          // var fields = this.fields();
           typeof boo === "boolean" ? this._editMode.set( boo ) : this._editMode.set( ! this._editMode.get() );
-
-          for ( var field in fields ){
-            if ( this._model[ field ] instanceof Array && fields[ field ] instanceof Array ){
-              for( var i=0; i < fields[ field ].length; i++ ){
-                fields[ field ][ i ].editMode( this.inEditMode() );
-              }
-            } else {
-              fields[ field ].editMode( this.inEditMode() );
-            }
-          }
+          _traverseModel.call( this, editModeArray, editModeModel, editModeModel )
+          // for ( var field in fields ){
+          //   if ( this._model[ field ] instanceof Array && fields[ field ] instanceof Array ){
+          //     for( var i=0; i < fields[ field ].length; i++ ){
+          //       fields[ field ][ i ].editMode( this.inEditMode() );
+          //     }
+          //   } else {
+          //     fields[ field ].editMode( this.inEditMode() );
+          //   }
+          // }
         }
         return this.inEditMode();
       }
@@ -219,31 +180,29 @@ ModelInstanceSuper = function( params ){
     * @return Object
     */
     getAllErrors: { value: function getAllErrors(){
-        var self = this;
-        var errors;
-
-        var fields = self.fields();
-        errors = {};
-
-        for ( var field in fields ){
-
-          if ( self._model[ field ] instanceof Array && self[ field ] instanceof Array ){
-            errors[ field ] = [];
-
-            for ( var i=0; i < self[ field ].length; i++ ){
-              if ( self[ field ][ i ].hasErrors() ){
-                errors[ field ].push( self[ field ][ i ].getAllErrors() );
-              }
-            }
-
-          } else {
-            if ( ( fields[ field ].__name__ === "ModelInstance" || fields[ field ].__name__ === "NewModelInstance" ) && fields[ field ].hasErrors() ){
-              errors[ field ] = self[ field ].getAllErrors();
-            } else if ( self[ field ].hasErrors() ){
-              errors[ field ] = self[ field ].errors();
-            }
-          }
-        }
+        // var self    = this;
+        var errors  = {};
+        errors = _traverseModel.call( this, setArrayErrors, setModelErrors, setFieldErrors, errors );
+        // var fields = self.fields();
+        // for ( var field in fields ){
+        //
+        //   if ( self._model[ field ] instanceof Array && self[ field ] instanceof Array ){
+        //     errors[ field ] = [];
+        //
+        //     for ( var i=0; i < self[ field ].length; i++ ){
+        //       if ( self[ field ][ i ].hasErrors() ){
+        //         errors[ field ].push( self[ field ][ i ].getAllErrors() );
+        //       }
+        //     }
+        //
+        //   } else {
+        //     if ( ( fields[ field ].__name__ === "ModelInstance" || fields[ field ].__name__ === "NewModelInstance" ) && fields[ field ].hasErrors() ){
+        //       errors[ field ] = self[ field ].getAllErrors();
+        //     } else if ( self[ field ].hasErrors() ){
+        //       errors[ field ] = self[ field ].errors();
+        //     }
+        //   }
+        // }
 
         return errors;
       }
@@ -256,31 +215,8 @@ ModelInstanceSuper = function( params ){
     * @return Boolean
     */
     hasErrors: { value: function hasErrors(){
-        var ob = this.fields();
-        var hasErr = false;
-        var self = this;
-
-        if ( ! _.isEmpty( this.errors() ) ){
-          return true;
-        }
-
-        _.each( ob, function( value, key ){
-          var errors = self._errors.get() instanceof Array ? self._errors.get() : [];
-          if ( errors.length > 0 ) hasErr = true;
-
-          if ( value instanceof Array ){
-            _.each( value, function( v, k ){
-              if ( v.hasErrors() ) hasErr = true;
-            });
-
-          } else {
-            if ( value.hasErrors() ) hasErr = true;
-          }
-        });
-
-        return hasErr;
-      }
-    },
+      return ! _.isEmpty( this.getAllErrors() );
+    }},
 
     /**
     * Return object of fields only, limited to fields present in model
@@ -288,15 +224,14 @@ ModelInstanceSuper = function( params ){
     * @return Object
     */
     fields: { value: function fields(){
-        var fields = {}
-        for ( var field in this ){
-          if ( _.has( this._model, field ) ){
-            fields[ field ] = this[ field ];
-          }
+      var fields = {}
+      for ( var field in this ){
+        if ( _.has( this._model, field ) ){
+          fields[ field ] = this[ field ];
         }
-        return fields;
       }
-    },
+      return fields;
+    }},
 
     /**
     * Return array of fields
@@ -304,10 +239,8 @@ ModelInstanceSuper = function( params ){
     * @return Array
     */
     fieldsArray: { value: function fieldsArray(){
-        return _.values( this.fields() );
-      }
-    },
-
+      return _.values( this.fields() );
+    }},
 
     /**
     * If instance is NewModelInstance, return true; else false
@@ -325,8 +258,8 @@ ModelInstanceSuper = function( params ){
     * @return Number
     */
     save: { value: function save( callback ){
-      if ( this.beforeSave ) this.beforeSave();
       this.validate();
+      if ( this.beforeSave ) this.beforeSave();
 
       var data = this.getValue();
 
@@ -371,35 +304,35 @@ ModelInstanceSuper = function( params ){
     * @return Object
     */
     getValue: { value: function getValue(){
-      var self    = this;
+      // var self    = this;
       var data    = {};
-      var fields  = self.fields();
-      _ensureId.call( this )
+      // var fields  = self.fields();
+      // _ensureId.call( this )
 
       if (! this.savable() && ! this._parent ) return data;
 
-      for ( var field in fields ){
-        if ( self._model[ field ] instanceof Array && self[ field ] instanceof Array ){
-          data[ field ] = [];
+      _traverseModel.call( this, getArrayData, getModelData, getModelData, data );
 
-          for ( var i=0; i < self[ field ].length; i++ ){
-            if (! self[ field ][ i ].isNew() ){
-              data[ field ].push( self[ field ][ i ].getValue() );
-
-            } else if ( self[ field ][ i ]._model.required || ! self[ field ][ i ].isEmpty() ){
-              data[ field ].push( self[ field ][ i ].getValue() );
-            }
-          }
-
-        } else {
-          data[ field ] = fields[ field ].getValue();
-        }
-      }
+      // for ( var field in fields ){
+      //   if ( self._model[ field ] instanceof Array && self[ field ] instanceof Array ){
+      //     data[ field ] = [];
+      //
+      //     for ( var i=0; i < self[ field ].length; i++ ){
+      //       if (! self[ field ][ i ].isNew() ){
+      //         data[ field ].push( self[ field ][ i ].getValue() );
+      //
+      //       } else if ( self[ field ][ i ]._model.required || ! self[ field ][ i ].isEmpty() ){
+      //         data[ field ].push( self[ field ][ i ].getValue() );
+      //       }
+      //     }
+      //
+      //   } else {
+      //     data[ field ] = fields[ field ].getValue();
+      //   }
+      // }
 
       if (! this._model.required && _.chain( data ).values().compact().isEmpty().value() && this.isNew() )
         return;
-
-
       if ( this._parent && this._id ) data._id = this._id;
 
       return data;
@@ -413,59 +346,61 @@ ModelInstanceSuper = function( params ){
     * @return ModelInstance
     */
     setValue: { value: function setValue( patch ){
-      var model = this._model;
+      // var model = this._model;
       if (! patch ) return;
-      if (! patch.__name__ ) patch = new model.instance( patch );
+      if (! patch.__name__ ) patch = new this._model.instance( patch );
 
-      for ( field in model ){
-        var doc       = this[ field ];
-        var patchDoc  = patch[ field ];
+      _traverseModel.call( this, setArrayValue, setModelValue, setModelValue, patch );
 
-        if ( model[ field ] instanceof Array ){
-          patchDoc = patchDoc || [];
-          if (! doc ) doc = patchDoc;
-          var newDocs = [];
+      // for ( field in model ){
+      //   var doc       = this[ field ];
+      //   var patchDoc  = patch[ field ];
+      //
+        // if ( model[ field ] instanceof Array ){
+        //   patchDoc = patchDoc || [];
+        //   if (! doc ) doc = patchDoc;
+        //   var newDocs = [];
+        //
+        //   // iterate over items from new doc;
+        //   // find any items new to doc
+        //   patchDoc.forEach( function( item, index, array ){
+        //     var oldItem = _.find( doc, function( i ){ return i._id === item._id });
+        //     if (! oldItem ){
+        //       var newItem = new model[ field ][ 0 ].newInstance( item.getValue() );
+        //       if ( item.savable() )   newDocs.push( item );
+        //
+        //     } else if ( oldItem ){
+        //       oldItem.setValue( item )
+        //       newDocs.push( oldItem );
+        //     }
+        //   }.bind( this ))
+        //
+        //   // iterate over old items;
+        //   // find old items that have been removed from old doc;
+        //   // remove if permissible; else add/retain item;
+        //   doc.forEach( function( item, index, array ){
+        //     var newItem = _.find( newDocs, function( i ){ return i._id === item._id });
+        //     if (( ! item.savable() || ! item.removable() ) && ! newItem ){
+        //       newDocs.push( item );
+        //     }
+        //
+        //   }.bind( this ))
+        //
+        //   if ( _.isEmpty( newDocs ) && ! Meteor.isServer ){
+        //     for ( var i=0; i < model[ field ][ 0 ].extra; i++ ){
+        //       this[ field ].push( new model[ field ][ 0 ].newInstance );
+        //       _ensureParent.call( this, this[ field ][ i ] );
+        //       _ensureId.call( this[ field ][ i ] );
+        //     }
+        //   }
+        //
+        //   this[ field ] = newDocs;
 
-          // iterate over items from new doc;
-          // find any items new to doc
-          patchDoc.forEach( function( item, index, array ){
-            var oldItem = _.find( doc, function( i ){ return i._id === item._id });
-            if (! oldItem ){
-              var newItem = new model[ field ][ 0 ].newInstance( item.getValue() );
-              if (! newItem._parent ) Object.defineProperty( newItem, "_parent", { value: this });
-              if (! newItem._id )     Object.defineProperty( newItem, "_id", { value: ( new Mongo.ObjectID ).toJSONValue() } )
-              if ( item.savable() )   newDocs.push( item );
-
-            } else if ( oldItem ){
-              newDocs.push( oldItem.setValue( item ) );
-            }
-          })
-
-          // iterate over old items;
-          // find old items that have been removed from old doc;
-          // remove if permissible; else add/retain item;
-          doc.forEach( function( item, index, array ){
-            var newItem = _.find( newDocs, function( i ){ return i._id === item._id });
-            if (( ! item.savable() || ! item.removable() ) && ! newItem )
-              newDocs.push( item );
-          })
-
-          if ( _.isEmpty( newDocs ) && ! Meteor.isServer ){
-            for ( var i=0; i < model[ field ][ 0 ].extra; i++ ){
-              this[ field ].push( new model[ field ][ 0 ].newInstance );
-              Object.defineProperty( this[ field ][ i ], "_parent", { value: this });
-              Object.defineProperty( this[ field ][ i ], "_id", { value: ( new Mongo.ObjectID ).toJSONValue() } )
-            }
-          }
-
-          this[ field ] = newDocs;
-
-        } else if ( model[ field ].__name__ === "Model" || model[ field ].__name__ === "Field" ){
-          var nVal = patchDoc.getValue();
-          if ( doc.savable() && nVal !== undefined )
-            doc.setValue( nVal );
-        }
-      }
+        // } else if ( model[ field ].__name__ === "Model" || model[ field ].__name__ === "Field" ){
+          // if ( doc.savable() && patchDoc.getValue() !== undefined )
+          //   doc.setValue( patchDoc.getValue() );
+        // }
+      // }
 
       return this;
     }},
@@ -482,30 +417,33 @@ ModelInstanceSuper = function( params ){
         if ( this.beforeValidation ) this.beforeValidation();
         _ensureId.call( this );
 
-        var fields = this.fields();
-        for ( var field in fields ){
-          if ( this._model[ field ] instanceof Array && this[ field ] instanceof Array ){
-            for ( var i=0; i < this[ field ].length; i++ ){
-              _ensureParent.call( this, this[ field ][ i ] );
-              this[ field ][ i ].validate();
-            }
-          } else {
-            fields[ field ].validate();
-            if ( this._model && fields[ field ].field ){
-              if ( fields[ field ].field.unique && this._model.collection ){
-                var find = {};
-                find[ field ] = fields[ field ].value;
-                find._id = { '$ne': this._id };
+        // var fields = this.fields();
 
-                if ( this._model.collection.find( find ).count() !== 0 ){
-                  var errs = fields[ field ]._errors.get();
-                  errs.push( new Error( "This " + field + " already exists." ) );
-                  this._errors.set( errs );
-                }
-              }
-            }
-          }
-        }
+
+        _traverseModel.call( this, validateArray, validateModel, validateModel );
+        // for ( var field in fields ){
+          // if ( this._model[ field ] instanceof Array && this[ field ] instanceof Array ){
+          //   for ( var i=0; i < this[ field ].length; i++ ){
+          //     _ensureParent.call( this, this[ field ][ i ] );
+          //     this[ field ][ i ].validate();
+          //   }
+          // } else {
+          //   fields[ field ].validate();
+          //   if ( this._model && fields[ field ].field ){
+          //     if ( fields[ field ].field.unique && this._model.collection ){
+          //       var find = {};
+          //       find[ field ] = fields[ field ].value;
+          //       find._id = { '$ne': this._id };
+          //
+          //       if ( this._model.collection.find( find ).count() !== 0 ){
+          //         var errs = fields[ field ]._errors.get();
+          //         errs.push( new Error( "This " + field + " already exists." ) );
+          //         this._errors.set( errs );
+          //       }
+          //     }
+          //   }
+          // }
+        // }
 
         if ( this.modelValidator ){
           try {
@@ -518,29 +456,29 @@ ModelInstanceSuper = function( params ){
         }
 
         // Remove errors of unrequired fields
-        if ( this.hasErrors() && this.isNew() ){
-          if ( ! this._model.required ){
-
-            var fields = this.fields();
-            for ( var field in fields ){
-              if ( ! this[ field ].field.required ){
-                switch( typeof( this[ field ].value ) ){
-                  case 'undefined':
-                    this[ field ]._errors = [];
-                    break;
-                  case 'string':
-                  case 'array':
-                    if ( this[ field ].value.length === 0 ){
-                      this[ field ].value = this[ field ].field.defaultValue();
-                      this[ field ]._errors = [];
-                    }
-                    break;
-                }
-              }
-            }
-            this._errors.set( [] );
-          }
-        };
+        // if ( this.hasErrors() && this.isNew() ){
+        //   if ( ! this._model.required ){
+        //
+        //     var fields = this.fields();
+        //     for ( var field in fields ){
+        //       if ( ! this[ field ].field.required ){
+        //         switch( typeof( this[ field ].value ) ){
+        //           case 'undefined':
+        //             this[ field ]._errors = [];
+        //             break;
+        //           case 'string':
+        //           case 'array':
+        //             if ( this[ field ].value.length === 0 ){
+        //               this[ field ].value = this[ field ].field.defaultValue();
+        //               this[ field ]._errors = [];
+        //             }
+        //             break;
+        //         }
+        //       }
+        //     }
+        //     this._errors.set( [] );
+        //   }
+        // };
 
         if ( this.hasErrors() ){
           console.log( this.getAllErrors() );
@@ -569,12 +507,264 @@ ModelInstanceSuper = function( params ){
 
 
 
-function _ensureId(){
+/////////////////////////////////////
+///  Private  //////////
+/////////////////////////////////////
+
+function _ensureId( dataId ){
+  var dataId  = dataId || null;
+  var newId   = typeof( dataId ) === 'string' ? dataId : ( new Mongo.ObjectID ).toJSONValue();
+
   if (! this._id && this._parent )
-    Object.defineProperty( this, "_id", { value: ( new Mongo.ObjectID ).toJSONValue() })
+    Object.defineProperty( this, "_id", { value: newId })
 }
+
+
 
 function _ensureParent( field ){
   if (! field._parent )
     Object.defineProperty( field, "_parent", { value: this })
+}
+
+
+
+function _traverseModel( withArray, withModel, withField, data ){
+  var schema    = this._model;
+
+  for ( var f in schema ){
+    var field = schema[ f ];
+
+    if ( field instanceof Array ){
+      // withArray ( item, fieldName, context )
+      if ( typeof( withArray ) === "function" ) withArray.call( this, field[0], f, data );
+
+    } else if ( field.__name__ === "Model" ) {
+      // withModel
+      if ( typeof( withModel ) === "function" ) withModel.call( this, field, f, data );
+
+    } else if ( field.__name__ === "Field" ){
+      // withField
+      if ( typeof( withField ) === "function" ) withField.call( this, field, f, data );
+
+    }
+  }
+
+  return data;
+}
+
+
+
+function initArray( item, fieldName, data ){
+  data[ fieldName ]     = data[ fieldName ] instanceof Array ? data[ fieldName ] : [];
+  this[ fieldName ]     = [];
+
+  for ( var i=0; i < data[ fieldName ].length; i++ ){
+    var arrayData = data[ fieldName ][ i ];
+
+    if ( this.isNew() )
+      this[ fieldName ][ i ] = new item.newInstance( arrayData );
+    else
+      this[ fieldName ][ i ] = new item.instance( arrayData );
+
+    _ensureParent.call( this, this[ fieldName ][ i ] );
+    _ensureId.call( this[ fieldName ][ i ], arrayData._id );
+    this[ fieldName ][ i ].setAttributes();
+  }
+}
+
+
+
+function initFieldOrModel( item, fieldName, data ){
+  var fieldData     = data[ fieldName ];
+  this[ fieldName ] = new item.instance( fieldData );
+  this[ fieldName ]._editMode.set( this.isNew() );
+  _ensureParent.call( this, this[ fieldName ] );
+  this[ fieldName ].setAttributes();
+}
+
+
+
+function setAttributes( attributes ){
+  var attributes        = attributes || {};
+  var oldAttributes     = _.clone( this._model.attributes );
+  var schema            = this._model;
+
+  if      ( typeof( attributes.bootstrap )  === "boolean" ) attributes.bootstrap = attributes.bootstrap;
+  else if ( typeof( oldAttributes.bootstrap ) === "boolean" ) attributes.bootstrap = oldAttributes.bootstrap;
+  else attributes.bootstrap = true;
+
+  attributes.class      = attributes.class || oldAttributes.class || '';
+  attributes.class      = attributes.class.replace( /form-control/ig, '' ).trim();
+  if ( attributes.bootstrap ) attributes.class += " form-control";
+  attributes.class = attributes.class.trim();
+
+  if      ( typeof( attributes.horizontal )  === "boolean" ) attributes.horizontal = attributes.horizontal;
+  else if ( typeof( oldAttributes.horizontal ) === "boolean" ) attributes.horizontal = oldAttributes.horizontal;
+  else attributes.horizontal = true;
+
+  function setArrayAttributes( item, fieldName, data ){
+    for ( var i=0; i < this[ fieldName ].length; i++ ){
+      this[ fieldName ][ i ].setAttributes( data );
+    }
+  }
+  function setModelAttributes( item, fieldName, data ){
+    this[ fieldName ].setAttributes( data )
+  }
+
+  _traverseModel.call( this, setArrayAttributes, setModelAttributes, setModelAttributes, attributes )
+
+  // for ( var field in schema ){
+  //   if ( schema[ field ] instanceof Array ){
+  //     var model = schema[ field ][ 0 ];
+  //
+  //     for ( var i=0; i < this[ field ].length; i++ ){
+  //       this[ field ][ i ].setAttributes( attributes );
+  //     }
+  //   } else {
+  //     this[ field ].setAttributes( attributes );
+  //   }
+  // }
+
+  this._attr.set( attributes );
+  return this;
+}
+
+
+
+function getAttributes(){
+  return this._attr.get();
+}
+
+
+function editModeArray( item, fieldName, data ){
+  for( var i=0; i < this[ fieldName ].length; i++ ){
+    this[ fieldName ][ i ].editMode( this.inEditMode() );
+  }
+}
+
+
+function editModeModel( item, fieldName, data ){
+  this[ fieldName ].editMode( this.inEditMode() );
+}
+
+
+function setArrayErrors( item, fieldName, data ){
+  data[ fieldName ] = [];
+  for ( var i=0; i < this[ fieldName ].length; i++ ){
+    if ( this[ fieldName ][ i ].hasErrors() ){
+      data[ fieldName ].push( this[ fieldName ][ i ].getAllErrors() );
+    }
+  }
+  if ( data[ fieldName ].length <= 0 ) delete data[ fieldName ];
+}
+
+
+function setModelErrors( item, fieldName, data ){
+  if ( this[ fieldName ].hasErrors() ) data[ fieldName ] = this[ fieldName ].getAllErrors();
+}
+
+
+function setFieldErrors( item, fieldName, data ){
+  if ( this[ fieldName ].hasErrors() ) data[ fieldName ] = this[ fieldName ].errors();
+}
+
+
+function getArrayData( item, fieldName, data ){
+  if (! this[ fieldName ] instanceof Array ) return [];
+  data[ fieldName ] = [];
+
+  for ( var i=0; i < this[ fieldName ].length; i++ ){
+    if (! this[ fieldName ][ i ].isNew() ){
+      data[ fieldName ].push( this[ fieldName ][ i ].getValue() );
+
+    } else if ( item.required || ! this[ fieldName ][ i ].isEmpty() ){
+      data[ fieldName ].push( this[ fieldName ][ i ].getValue() );
+    }
+  }
+  return data;
+}
+
+
+function getModelData( item, fieldName, data ){
+  data[ fieldName ] = this[ fieldName ].getValue();
+  return data;
+}
+
+
+function setArrayValue( modelField, fieldName, patch ){
+  var doc     = this[ fieldName ];
+  var newDocs = [];
+  patchDoc    = patch[ fieldName ] || [];
+  if (! doc ) doc = patchDoc;
+
+  // iterate over items from new doc;
+  // find any items new to doc
+  patchDoc.forEach( function( item, index, array ){
+    var oldItem = _.find( doc, function( i ){ return i._id === item._id });
+    if (! oldItem ){
+      var newItem = new modelField.newInstance( item.getValue() );
+      if ( item.savable() )   newDocs.push( item );
+
+    } else if ( oldItem ){
+      oldItem.setValue( item )
+      newDocs.push( oldItem );
+    }
+  }.bind( this ))
+
+  // iterate over old items;
+  // find old items that have been removed from old doc;
+  // remove if permissible; else add/retain item;
+  doc.forEach( function( item, index, array ){
+    var newItem = _.find( newDocs, function( i ){ return i._id === item._id });
+    if (( ! item.savable() || ! item.removable() ) && ! newItem ){
+      newDocs.push( item );
+    }
+
+  }.bind( this ))
+
+  if ( _.isEmpty( newDocs ) && ! Meteor.isServer ){
+    for ( var i=0; i < modelField.extra; i++ ){
+      this[ fieldName ].push( new modelField.newInstance );
+      _ensureParent.call( this, this[ fieldName ][ i ] );
+      _ensureId.call( this[ fieldName ][ i ] );
+    }
+  }
+
+  this[ fieldName ] = newDocs;
+}
+
+
+function setModelValue( modelField, fieldName, patch ){
+  var doc       = this[ fieldName ];
+  var patchDoc  = patch[ fieldName ];
+  if ( doc.savable() && patchDoc.getValue() !== undefined )
+    doc.setValue( patchDoc.getValue() );
+}
+
+
+function validateArray( item, fieldName ){
+  if ( this[ fieldName ] instanceof Array ){
+    for ( var i=0; i < this[ fieldName ].length; i++ ){
+      _ensureParent.call( this, this[ fieldName ][ i ] );
+      this[ fieldName ][ i ].validate();
+    }
+  }
+}
+
+
+function validateModel( item, fieldName ){
+  this[ fieldName ].validate();
+
+  if ( item.unique && this._model.collection ){
+    var find = {};
+    find[ field ] = this[ fieldName ].value;
+    find._id = { '$ne': this._id };
+
+    // check uniqueness; add error to model if not unique
+    if ( this._model.collection.find( find ).count() !== 0 ){
+      var errs = this[ fieldName ]._errors.get();
+      errs.push( new Error( "This " + field + " already exists." ) );
+      this._errors.set( errs );
+    }
+  }
 }
