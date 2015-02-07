@@ -262,31 +262,40 @@ ModelInstanceSuper = function( params ){
     * @method validate
     * @param {function} callback
     */
-    validate: { value: function( callback ){
-        this._errors.set( [] );
-        if ( this.beforeValidation ) this.beforeValidation();
-        _ensureId.call( this );
-        _traverseModel.call( this, validateArray, validateModel, validateModel );
+    validate: { value: function validate( callback ){
+      this._errors.set( [] );
+      if ( this.beforeValidation ) this.beforeValidation();
+      _ensureId.call( this );
+      _traverseModel.call( this, validateArray, validateModel, validateModel );
 
-        if ( this.modelValidator ){
-          try {
-            check( this.getValue(), this.modelValidator() );
-          } catch( e ){
-            var errs = this._errors.get();
-            errs.push( e );
-            this._errors.set( errs );
-          }
+      if ( this.modelValidator ){
+        try {
+          check( this.getValue(), this.modelValidator() );
+        } catch( e ){
+          var errs = this._errors.get();
+          errs.push( e );
+          this._errors.set( errs );
         }
-
-        if ( this.hasErrors() ){
-          console.log( this.getAllErrors() );
-          throw new Error( 'Please check the fields for errors.' );
-        }
-
-        if ( this.afterValidation ) this.afterValidation();
-        if ( typeof( callback ) === "function" ) callback();
       }
-    }
+
+      if ( this.hasErrors() ){
+        console.log( this.getAllErrors() );
+        throw new Error( 'Please check the fields for errors.' );
+      }
+
+      if ( this.afterValidation ) this.afterValidation();
+      if ( typeof( callback ) === "function" ) callback();
+    }},
+    
+    /**
+    * Revert to previously saved value
+    * @method revert
+    */
+    revert: { value: function revert(){
+      if (! this._model.collection || ! this._id || this.isNew() ) return;
+      var revertTo = this._model.collection.findOne( this._id );
+      this.setValue( revertTo );
+    }}
 
   });
 
