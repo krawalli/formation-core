@@ -10,13 +10,14 @@ Formation.Validators = Formation.Validators || {};
 // Email validator
 Object.defineProperty( Formation.Validators, "Email", {
   value: function( min, max ){
+    var mailpattern = /^(([^<>\(\)\[\]\.,;:\s@"]+(.[^<>\(\)\[\]\.,;:\s@"]+)*)|(".+"))@(([0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3})|(([a-zA-Z-0-9]+.)+[a-zA-Z]{2,}))$/gmi;
     return Match.Where( function( value ){
       try {
         check( value, String );
       } catch( error ){
         throw new Error( "Please enter a string value." );
       }
-      if ( value.indexOf( '@' ) === -1 || value.indexOf( '.' ) === -1 ){
+      if (!mailpattern.test(value)) {
         throw new Error( "Please enter a valid email address." );
       }
       if ( ( min !== undefined && value.length < min ) || ( max !== undefined &&  value.length > max ) ){
