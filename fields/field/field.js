@@ -88,7 +88,9 @@ Formation.Field = function Field( params ){
     attributes.class  = attrs.class ||  attributes.class  || '';
 
     attributes.class      = attributes.class.replace( /form-control/ig, '' ).trim();
+    attributes.class      = attributes.class.replace( /field-required/ig, '' ).trim();
     if ( attributes.bootstrap ) attributes.class += ' form-control';
+    if ( this.required ) attributes.class += ' field-required';
     attributes.class = attributes.class.trim();
 
     attributes.name   = attrs.name    ||  attributes.name   || this.label || '';

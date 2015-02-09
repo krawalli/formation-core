@@ -11,17 +11,18 @@ Formation.Validators = Formation.Validators || {};
 Object.defineProperty( Formation.Validators, "Email", {
   value: function( min, max ){
     var mailpattern = /^(([^<>\(\)\[\]\.,;:\s@"]+(.[^<>\(\)\[\]\.,;:\s@"]+)*)|(".+"))@(([0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3})|(([a-zA-Z-0-9]+.)+[a-zA-Z]{2,}))$/gmi;
+
     return Match.Where( function( value ){
       try {
         check( value, String );
       } catch( error ){
-        throw new Error( "Please enter a string value." );
+        throw new Formation.Error( "Email", "notAString" );
       }
-      if (!mailpattern.test(value)) {
-        throw new Error( "Please enter a valid email address." );
+      if (! mailpattern.test( value )) {
+        throw new Formation.Error( "Email", "notAnEmail" );
       }
       if ( ( min !== undefined && value.length < min ) || ( max !== undefined &&  value.length > max ) ){
-        throw new Error( "Please enter an email address no longer than " + max + " characters." );
+        throw new Formation.Error( "Email", "tooLong", { value: value, min: min, max: max });
       }
       return true;
     });
@@ -38,10 +39,10 @@ Object.defineProperty( Formation.Validators, "Slug", {
       try {
         check( value, String );
       } catch( error ){
-        throw new Error( "Please enter a string value." );
+        throw new Formation.Error( "Slug", "notAString" );
       }
       if ( ( min !== null && value.length < min ) || ( max !== null &&  value.length > max ) ){
-        throw new Error( "Please enter a slug no longer than " + max + " characters." );
+        throw new Formation.Error( "Slug", "tooLong", { value: value, min: min, max: max });
       }
       return true;
     });
@@ -57,13 +58,13 @@ Object.defineProperty( Formation.Validators, "BasicChar", {
       try {
         check( value, String );
       } catch( error ){
-        throw new Error( "Please enter a string value." );
+        throw new Formation.Error( "Char", "notAString", { value: value, min: min, max: max });
       }
       if ( value.length < min || ( max && value.length > max ) ){
         if ( !max ){
-          throw new Error( "Please enter a value longer than " + min + " characters." );
+          throw new Formation.Error( "Char", "tooShort", { value: value, min: min, max: max });
         } else {
-          throw new Error( "Please enter a value longer than " + min + " characters and less than " + max + " characters." );
+          throw new Formation.Error( "Char", "tooShortTooLong", { value: value, min: min, max: max });
         }
       }
       return true;
@@ -79,15 +80,15 @@ var ArrayValidator = function( validator, min, max ){
     try {
       check( value, Array );
     } catch( e ){
-      throw new Error( "Please enter a value." );
+      throw new Formation.Error( "Array", "noValue", { value: value, min: min, max: max });
     }
 
     check( value, [ validator( min ) ] );
     if ( value.length < min || ( max && value.length > max ) ){
       if (! max ){
-        throw new Error( "Please enter more than " + min + " values." );
+        throw new Formation.Error( "Array", "tooFew", { value: value, min: min, max: max });
       } else {
-        throw new Error( "Please enter more than " + min + " and less than " + max + " values." );
+        throw new Formation.Error( "Array", "tooFewTooMany", { value: value, min: min, max: max });
       }
     }
     return true;
@@ -111,13 +112,17 @@ Object.defineProperty( Formation.Validators, "BasicNumber", {
       try {
         check( value, Number );
       } catch( error ){
-        throw new Error( "Please enter a number value." );
+        throw new Formation.Error( "Number", "notANumber", { value: value, min: min, max: max });
       }
+
+      if (! value && value !== 0 )
+        throw new Formation.Error( "Number", "notANumber", { value: value, min: min, max: max });
+
       if ( ( typeof( min )==='number' && value < min ) || ( max && value > max ) ){
         if ( !max ){
-          throw new Error( "Please enter a value greater than " + min + "." );
+          throw new Formation.Error( "Number", "tooSmall", { value: value, min: min, max: max });
         } else {
-          throw new Error( "Please enter a value greater than " + min + " and less than " + max + "." );
+          throw new Formation.Error( "Number", "tooSmallTooBig", { value: value, min: min, max: max });
         }
       }
       return true;
@@ -140,7 +145,7 @@ Object.defineProperty( Formation.Validators, "ValueIsInChoices", {
   value: function( choices ){
     return Match.Where( function( value ){
       if ( ! _.contains( choices, value ) ){
-        throw new Error( value + ' is not an available choice' );
+        throw new Formation.Error( "Choices", "notInChoices", { value: value, min: min, max: max });
       } else {
         return true;
       }
@@ -157,15 +162,15 @@ Object.defineProperty( Formation.Validators, "ChoicesArray", {
       try {
         check( value, Array );
       } catch( e ){
-        throw new Error( "Please enter a value." );
+        throw new Formation.Error( "Choices", "noValue", { value: value, min: min, max: max });
       }
 
       check( value, [ Formation.Validators.ValueIsInChoices( choices ) ] );
       if ( ( min !== null && value.length < min ) || ( max !== null &&  value.length > max ) ){
         if ( max !== null ){
-          throw new Error( "Please choose at least " + min + " and no more than " + max + " choices." );
+          throw new Formation.Error( "Choices", "tooFewTooMany", { value: value, min: min, max: max });
         } else {
-          throw new Error( "Please choose at least " + min + " choice(s)." );
+          throw new Formation.Error( "Choices", "tooFew", { value: value, min: min, max: max });
         }
       }
       return true;
@@ -180,14 +185,14 @@ Object.defineProperty( Formation.Validators, "Time", {
   value: function( min, max ){
     return Match.Where( function( value ){
       if (! _.isObject( value ) ){
-        throw new Error( "Please enter a time object with {hour[,minute,second]}" );
+        throw new Formation.Error( "Time", "notATime", { value: value, min: min, max: max });
       }
       if ( min &&
         ( ( value.hour < min.hour ) ||
             ( value.hour === min.hour && value.minute < min.minute ) ||
             ( value.hour === min.hour && value.minute === min.minute && value.second < min.second ) )
         ){
-        throw new Error( "Please enter a time value greater than " + [ min.hour, min.minute, min.second ].join( ':' ) );
+        throw new Formation.Error( "Time", "tooEarly", { value: value, min: min, max: max });
       }
 
       if ( max &&
@@ -195,7 +200,7 @@ Object.defineProperty( Formation.Validators, "Time", {
             ( value.hour === max.hour && value.minute > max.minute ) ||
             ( value.hour === max.hour && value.minute === max.minute && value.second > max.second ) )
         ){
-        throw new Error( "Please enter a time value less than " + [ max.hour, max.minute, max.second ].join( ':' ) );
+        throw new Formation.Error( "Time", "tooLate", { value: value, min: min, max: max });
       }
 
       return true;
@@ -212,20 +217,20 @@ Object.defineProperty( Formation.Validators, "Date", {
       try {
         check( value, Date );
       } catch( e ){
-        throw new Error( "Please enter a date in YYYY-MM-DD format" );
+        throw new Formation.Error( "Date", "notADate" );
       }
 
       if ( ( min !== null && value < min ) || ( max !== null && value > max ) ){
         if ( min === null ){
-          throw new Error( "Please enter a value less than " + max.toLocaleString() + "." );
+          throw new Formation.Error( "Date", "tooLate", { value: value, min: min, max: max });
         } else if ( max === null ){
-          throw new Error( "Please enter a value greater than " + min.toLocaleString() );
+          throw new Formation.Error( "Date", "tooEarly", { value: value, min: min, max: max });
         } else {
-          throw new Error( "Please enter a value greater than " + min.toLocaleString() + " and less than " + max.toLocaleString() + "." );
+          throw new Formation.Error( "Date", "tooEarlyTooLate", { value: value, min: min, max: max });
         }
       }
 
-      if (! +value ) throw new Error( "Please enter a valid date" );
+      if (! +value ) throw new Formation.Error( "Date", "notADate" );
 
       return true;
     })
@@ -241,11 +246,11 @@ Object.defineProperty( Formation.Validators, "URL", {
       try {
         check( value, Formation.Validators.BasicChar( 10 ) );
       } catch( e ){
-        throw new Error( 'Please include the full URL (http://...)');
+        throw new Formation.Error( "URL", "notAFullURL", { value: value, min: min, max: max });
       }
       var regex = /^(https?:\/\/)([\da-z\.-]+)\.([a-z\.]{2,6})(\/.*)*\/?$/;
       if (! value.match( regex ) ){
-        throw new Error( "Please enter a valid URL." );
+        throw new Formation.Error( "URL", "notAURL" );
       }
 
       return true;

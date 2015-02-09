@@ -5,7 +5,6 @@
 
 var ModelChoiceField = function Field( params ){
   params = typeof params === "object" ? params : {};
-
   Formation.Field.call( this, params );
 
   Object.defineProperties( this, {
@@ -17,8 +16,8 @@ var ModelChoiceField = function Field( params ){
     }}
   });
 };
-
 ModelChoiceField.prototype = Object.create( Formation.Field.prototype );
+
 
 
 /* Single Model Choice  */
@@ -49,9 +48,9 @@ Formation.Fields.ModelSingleChoice = function Field( params ){
     value: Formation.FieldInstance({ field: this })
   });
 };
-
 Formation.Fields.ModelSingleChoice.prototype = Object.create( ModelChoiceField.prototype );
 Formation.Fields.ModelSingleChoice.prototype.constructor = Formation.Fields.ModelSingleChoice;
+
 
 
 /* Multiple Model Choice  */

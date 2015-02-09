@@ -5,7 +5,9 @@ Formation.Fields.Number = function Field( params ){
   params.fromDOM = function( value ){
     if (! this.required && ( value === '' || value === null || value === undefined ) )
       return undefined;
-    return +value;
+    var val = +value;
+    if (! val && val !== 0 ) val = undefined;
+    return val;
   };
 
   Formation.Field.call( this, params );
@@ -47,7 +49,7 @@ Formation.Fields.NumberArray = function Field( params ){
   params.fromDOM = function( value ){
     if (! this.required && ( value === "" || value === null || value === undefined ) ) return undefined;
     if (! this.required && ! this.length ) return undefined;
-    
+
     var cleanValue = value.split( this.field.delimiter );
     for ( var i=0; i < cleanValue.length; i++ ){
       cleanValue[ i ] = +cleanValue[ i ].trim();

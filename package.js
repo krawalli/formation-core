@@ -1,7 +1,7 @@
 Package.describe({
   name: "quietcreep:formation-core",
   summary: "Core objects for Formation for Meteor",
-  version: "2.0.3",
+  version: "2.0.4",
   git: "http://github.com/quietcreep/formation-core",
   documentation: null,
 });
@@ -16,6 +16,9 @@ Package.onUse( function( api ) {
 
   //// settings and setup ///////////
   api.addFiles( 'settings.js', both );
+  api.addFiles( 'helpers.js', both );
+  api.addFiles( 'errors.js', both );
+
 
   //// fields ///////////////////////
   var fields = [
@@ -39,14 +42,14 @@ Package.onUse( function( api ) {
     api.addFiles( 'fields/'+ fields[ i ] +'/field.js', both );
   }
 
-  api.addFiles( 'fieldInstance.js', both );
+  api.addFiles( 'fields/fieldInstance.js', both );
   api.addFiles( 'validators.js', both );
 
   //// models ///////////////////////
-  api.addFiles( 'model.js', both );
-  api.addFiles( 'modelSuper.js', both );
-  api.addFiles( 'modelInstance.js', both );
-  api.addFiles( 'newModelInstance.js', both );
+  api.addFiles( 'models/model.js', both );
+  api.addFiles( 'models/modelInstanceSuper.js', both );
+  api.addFiles( 'models/modelInstance.js', both );
+  api.addFiles( 'models/newModelInstance.js', both );
   api.addFiles( "saving.js", both );
 
   api.export( 'Formation' );
@@ -59,4 +62,5 @@ Package.onTest( function( api ) {
   api.use([ 'tinytest', 'test-helpers', 'underscore', 'quietcreep:formation-core' ], both );
   api.addFiles( 'tests/saving.js' );
   api.addFiles( 'tests/getValue.js' );
+  api.addFiles( 'tests/errors.js' );
 });

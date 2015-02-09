@@ -13,7 +13,14 @@ Formation.Time = function Time( time ){
     self.second = time.second;
 
   } else if ( typeof( time ) === 'string' ){
-    timeStrings = time.split( ':' );
+    var periodReg   = /am|pm/ig;
+    var period      = time.match( periodReg );
+    if ( period ){
+      time    = time.replace( periodReg, '' ).trim();
+      period  = _.contains( period, "PM" ) || _.contains( period, "pm" ) ? 12 : 0;
+    }
+    var timeStrings = time.split( ':' );
+
     timeNumbers = [];
     for( i=0; i <= timeStrings.length; i++ ){
       if (! timeStrings[ i ]){
@@ -22,20 +29,20 @@ Formation.Time = function Time( time ){
         timeNumbers.push( Number( timeStrings[i] ) );
       }
     }
-    self.hour = timeNumbers[0];
-    self.minute = typeof( timeNumbers[1] ) === 'number' ?  timeNumbers[1] : 0;
-    self.second = typeof( timeNumbers[2] ) === 'number' ?  timeNumbers[2] : 0;
+    self.hour   = timeNumbers[0] + period;
+    self.minute = timeNumbers[1] || 0;
+    self.second = timeNumbers[2] || 0;
 
   } else if ( _.isObject( time ) ){
     if (! _.contains( _.keys( time ), 'hour' ) ){
       throw new Error( 'Please construct a time object with {hour [,minute,second]} argument(s).' );
     }
-    self.hour = Number( time.hour );
+    self.hour   = Number( time.hour );
     self.minute = Number( time.minute ) || 0;
     self.second = Number( time.second ) || 0;
 
   } else if ( typeof( time ) === 'number' ){
-    self.hour = time;
+    self.hour   = time;
     self.minute = 0;
     self.second = 0;
   } else {

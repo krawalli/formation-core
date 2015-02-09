@@ -30,8 +30,9 @@ Formation.FieldInstance = function( params ){
       attributes.class  = attributes.class  || oldAttributes.class  || '';
 
       attributes.class      = attributes.class.replace( /form-control/ig, '' ).trim();
+      attributes.class      = attributes.class.replace( /field-required/ig, '' ).trim();
       if ( attributes.bootstrap ) attributes.class += ' form-control';
-      attributes.class = attributes.class.trim();
+      if ( this.required ) attributes.class += ' field-required';
 
       attributes.name   = attributes.name   || oldAttributes.name   || this.field.label || '';
       attributes.role   = attributes.role   || oldAttributes.role   || '';
