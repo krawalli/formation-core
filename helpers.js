@@ -24,6 +24,7 @@ Formation.toTitleCase = function( str ){
 };
 
 
+
 Formation.camelToSlug = function( str ) {
   // Separate camel-cased words with a space for later processing.
   str = str.replace( /[A-Z]/g, function( s ){  return " " + s; });
@@ -42,6 +43,35 @@ Formation.camelToSlug = function( str ) {
 
   // Trim leading and trailing whitespace and dashes.
   str = str.replace(/^[\s|-]+|[\s|-]+$/g, '');
+
+  return str;
+};
+
+
+
+Formation.camelToTitleCase = function( string ) {
+  var i, str, lowers, uppers;
+  var str = string.split( /(?=[A-Z])/ );
+  for ( var j=0; j < str.length; j++ ){
+    str[ j ] = Formation.toTitleCase( str[ j ] );
+  }
+  str = str.join( " " );
+
+  // Certain minor words should be left lowercase unless
+  // they are the first or last words in the string
+  lowers = ['A', 'An', 'The', 'And', 'But', 'Or', 'For', 'Nor', 'As', 'At',
+  'By', 'For', 'From', 'In', 'Into', 'Near', 'Of', 'On', 'Onto', 'To', 'With'];
+  for (i = 0; i < lowers.length; i++)
+      str = str.replace( new RegExp('\\s' + lowers[i] + '\\s', 'g' ),
+          function( txt ) {
+              return txt.toLowerCase();
+          });
+
+  // Certain words such as initialisms or acronyms should be left uppercase
+  uppers = [ 'Id', 'Tv' ];
+  for ( i = 0; i < uppers.length; i++ )
+      str = str.replace( new RegExp('\\b' + uppers[i] + '\\b', 'g' ),
+          uppers[ i ].toUpperCase());
 
   return str;
 };

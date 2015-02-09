@@ -8,53 +8,6 @@ var err = function( message ){
 };
 
 
-toTitleCase = function( string ){
-  var smallWords = /^(a|an|and|as|at|but|by|en|for|if|in|nor|of|on|or|per|the|to|vs?\.?|via)$/i;
-
-  return string.replace( /[A-Za-z0-9\u00C0-\u00FF]+[^\s-]*/g, function( match, index, title ){
-    if ( index > 0 && index + match.length !== title.length &&
-         match.search( smallWords ) > -1 && title.charAt( index - 2 ) !== ":" &&
-         ( title.charAt( index + match.length ) !== '-' || title.charAt( index - 1 ) === '-' ) &&
-         title.charAt( index - 1 ).search( /[^\s-]/ ) < 0 ) {
-      return match.toLowerCase();
-    }
-
-    if ( match.substr( 1 ).search( /[A-Z]|\../ ) > -1 ) {
-      return match;
-    }
-
-    return match.charAt( 0 ).toUpperCase() + match.substr( 1 );
-  });
-};
-
-camelToTitleCase = function( string ) {
-    var i, str, lowers, uppers;
-    var str = string.split( /(?=[A-Z])/ );
-    for ( var j=0; j < str.length; j++ ){
-      str[ j ] = toTitleCase( str[ j ] );
-    }
-    str = str.join( " " );
-
-    // Certain minor words should be left lowercase unless
-    // they are the first or last words in the string
-    lowers = ['A', 'An', 'The', 'And', 'But', 'Or', 'For', 'Nor', 'As', 'At',
-    'By', 'For', 'From', 'In', 'Into', 'Near', 'Of', 'On', 'Onto', 'To', 'With'];
-    for (i = 0; i < lowers.length; i++)
-        str = str.replace( new RegExp('\\s' + lowers[i] + '\\s', 'g' ),
-            function( txt ) {
-                return txt.toLowerCase();
-            });
-
-    // Certain words such as initialisms or acronyms should be left uppercase
-    uppers = [ 'Id', 'Tv' ];
-    for ( i = 0; i < uppers.length; i++ )
-        str = str.replace( new RegExp('\\b' + uppers[i] + '\\b', 'g' ),
-            uppers[ i ].toUpperCase());
-
-    return str;
-};
-
-
 /**
 * @module Formation
 * @submodule Model
@@ -66,7 +19,7 @@ Formation.Model = function( params ){
 
   _.each( params.schema, function( field, key ){
     if (! field.label && field instanceof Formation.Field ){
-      Object.defineProperty( field, "label", { value: camelToTitleCase( key ) } );
+      Object.defineProperty( field, "label", { value: Formation.camelToTitleCase( key ) } );
     }
   });
 
@@ -219,7 +172,7 @@ Formation.Model = function( params ){
     /**
     * Developer-set function to determine if model is savable by user;
     *  Context of the function you pass in will be a ModelInstance (i.e. use this.<field>.value to access fields values );
-    * @method editable
+    * @method savable
     * @type Function
     */
     savable: { value: savable },
@@ -228,7 +181,7 @@ Formation.Model = function( params ){
     /**
     * Developer-set function to determine if model (in an array) is removable by user;
     *  Context of the function you pass in will be a ModelInstance (i.e. use this.<field>.value to access fields values );
-    * @method editable
+    * @method removable
     * @type Function
     */
     removable: { value: removable },

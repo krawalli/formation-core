@@ -82,7 +82,7 @@ ModelInstanceSuper = function( params ){
     editable: { value: params.model.editable },
 
     /**
-    * Check to see if model is editable by user
+    * Check to see if model is savable by user
     * @method savable
     * @return Boolean
     */
@@ -286,7 +286,7 @@ ModelInstanceSuper = function( params ){
       if ( this.afterValidation ) this.afterValidation();
       if ( typeof( callback ) === "function" ) callback();
     }},
-    
+
     /**
     * Revert to previously saved value
     * @method revert
