@@ -145,7 +145,7 @@ Object.defineProperty( Formation.Validators, "ValueIsInChoices", {
   value: function( choices ){
     return Match.Where( function( value ){
       if ( ! _.contains( choices, value ) ){
-        throw new Formation.Error( "Choices", "notInChoices", { value: value, min: min, max: max });
+        throw new Formation.Error( "Choices", "notInChoices", { value: value });
       } else {
         return true;
       }

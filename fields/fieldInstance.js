@@ -94,6 +94,7 @@ Formation.FieldInstance = function( params ){
     * @return String/Number
     */
     summary: { value: params.field.summary },
+    toString: { value: params.field.summary },
 
     /**
     * Name of template widget to use for display
@@ -175,8 +176,10 @@ Formation.FieldInstance = function( params ){
         this._errors.set( [] );
 
         try {
-          this.value = this.fromDOM( this.value );  //if not clean already
-          check( this.value, this.pattern() );
+          this.value = this.fromDOM( this.value );  // if not clean already
+          var val = this.value;
+          if (! this.required && this.value === null ) val = undefined;
+          check( val, this.pattern() );
         } catch( e ){
           var errs = this._errors.get();
           errs.push( e );
@@ -239,12 +242,6 @@ Formation.FieldInstance = function( params ){
   if ( params.field.model ){
     Object.defineProperty( FieldInstance.prototype, "model", { value: params.field.model })
   }
-
-  // if ( Meteor.isServer ){
-    Object.defineProperty( FieldInstance.prototype, "getUnsavableValues", { value: function getUnsavableValues(){
-      if (! this.savable() ) return this.value;
-    }})
-  // }
 
   return FieldInstance;
 };

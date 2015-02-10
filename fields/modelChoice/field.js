@@ -25,7 +25,7 @@ Formation.Fields.ModelSingleChoice = function Field( params ){
   params          = typeof params === "object" ? params : {};
   params.widget   = params.widget || 'ModelSelect';
   params.fromDOM  = function( value ){
-    if ( this.field.model.collection.find( value ).count() > 0 ) return value;
+    return value;
   };
   params.toDOM    = function(){
     var instance = this.field.model.findOne({ _id: this.value });
@@ -36,10 +36,10 @@ Formation.Fields.ModelSingleChoice = function Field( params ){
 
   Object.defineProperty( this, "pattern", {
     value: function(){
-      var c = _.reduce( this.choices(), function( memo, value ){
-        memo.push( value._id );
-        return memo;
-      }, [] );
+      var choices = this.choices() || [];
+      var c = choices.map( function( item ){
+        return item._id;
+      });
       return this._optional( Formation.Validators.ValueIsInChoices( c ) );
     }
   });
@@ -70,7 +70,7 @@ Formation.Fields.ModelMultipleChoice = function Field( params ){
     if ( typeof( value ) === "number" || ! value ) return [];
     if ( typeof( value ) === "string" ) value = [ value ];
     if (! value instanceof Array ) return [];
-    return this.model.collection.find({ _id: { $in: value } }, { fields: { _id: 1 } }).fetch().map( function( mod ){ return mod._id });
+    return value;
   };
 
   params.defaultValue = params.defaultValue || function(){ return [] };
@@ -79,10 +79,10 @@ Formation.Fields.ModelMultipleChoice = function Field( params ){
 
   Object.defineProperty( this, "pattern", {
     value: function(){
-      var c = _.reduce( this.choices(), function( memo, value ){
-        memo.push( value._id );
-        return memo;
-      }, [] );
+      var choices = this.choices() || [];
+      var c = choices.map( function( item ){
+        return item._id;
+      });
       return this._optional( Formation.Validators.ChoicesArray( c, this.min, this.max ) );
     }
   });
