@@ -89,6 +89,13 @@ Formation.FieldInstance = function( params ){
     fromDOM: { value: params.field.fromDOM },
 
     /**
+    * Function to return data for customized display
+    * @method summary
+    * @return String/Number
+    */
+    summary: { value: params.field.summary },
+
+    /**
     * Name of template widget to use for display
     * @property widget
     * @type String

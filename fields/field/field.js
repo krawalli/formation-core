@@ -30,6 +30,7 @@ if ( typeof( Formation.Fields ) === 'undefined' )  Formation.Fields = {};
 *                                <b>defaultValue</b>:  Number/String/Function [optional]. Default value / function to return default value for FieldInstance,<br />
 *                                <b>toDOM</b>:     Function [optional]. Function to transform data in preparation for DOM display,<br />
 *                                <b>fromDOM</b>:   Function [optional]. Function to transform data in preparation for DB,<br />
+*                                <b>summary</b>:   Function [optional]. Function to return data for customized display,<br />
 *                                <b>attributes</b>:  Object containing attributes to appear in input
 *                              }
 */
@@ -45,6 +46,7 @@ Formation.Field = function Field( params ){
   };
   var fromDOM = params.fromDOM  || fromDOMDefault;
   var toDOM   = params.toDOM    || toDOMDefault;
+  var summary = params.summary  || toDOM;
 
   var editable;
   switch ( typeof( params.editable ) ){
@@ -216,5 +218,12 @@ Formation.Field = function Field( params ){
     * @return Object/String/Number
     */
     fromDOM: { value: fromDOM },
+
+    /**
+    * Function to return data for customized display
+    * @method summary
+    * @return String/Number
+    */
+    summary: { value: summary },
   });
 }
