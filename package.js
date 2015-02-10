@@ -50,7 +50,7 @@ Package.onUse( function( api ) {
   api.addFiles( 'models/modelInstanceSuper.js', both );
   api.addFiles( 'models/modelInstance.js', both );
   api.addFiles( 'models/newModelInstance.js', both );
-  api.addFiles( "saving.js", both );
+  api.addFiles( "saving.js", 'server' );
 
   api.export( 'Formation' );
 
