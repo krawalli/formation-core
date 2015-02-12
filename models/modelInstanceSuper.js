@@ -26,6 +26,92 @@ ModelInstanceSuper = function( params ){
     if ( this.isNew() ) this.editMode();
   }
 
+  var savable = params.model.savable;
+  if ( savable === null ){
+    savable = function(){
+      if (! this._model.collection ) return true;
+
+      if ( this.isNew() ){
+        var insertValidators  = this._model.collection._validators.insert.allow;
+        var insertDeny        = this._model.collection._validators.insert.deny;
+        if ( insertValidators.length === 0 && Meteor.isServer ) return false;
+        if ( insertValidators.length === 0 && Meteor.isClient ) return true;
+
+        var fal = _.all( insertValidators, function( val ){
+          var data    = {};
+          _traverseModel.call( this, getArrayData, getModelData, getModelData, data );
+          return ! val( Meteor.userId(), data );
+        }.bind( this ));
+
+        if ( fal ) return false;
+
+        fal = _.any( insertDeny, function( val ){
+          var data    = {};
+          _traverseModel.call( this, getArrayData, getModelData, getModelData, data );
+          return val( Meteor.userId(), data );
+        }.bind( this ));
+
+        if ( fal ) return false;
+
+      } else {
+        var updateValidators  = this._model.collection._validators.update.allow;
+        var updateDeny        = this._model.collection._validators.update.deny;
+
+        if ( updateValidators.length === 0 && Meteor.isServer ) return false;
+        if ( updateValidators.length === 0 && Meteor.isClient ) return true;
+
+        var fal = _.all( updateValidators, function( val ){
+          var data    = {};
+          _traverseModel.call( this, getArrayData, getModelData, getModelData, data );
+          return ! val( Meteor.userId(), this._id, _.keys( this.fields() ), data );
+        }.bind( this ));
+
+        if ( fal ) return false;
+
+        fal = _.any( updateDeny, function( val ){
+          var data    = {};
+          _traverseModel.call( this, getArrayData, getModelData, getModelData, data );
+          return val( Meteor.userId(), this._id, _.keys( this.fields() ), data );
+        }.bind( this ));
+
+        if ( fal ) return false;
+      }
+
+      return true;
+    }
+  }
+
+
+  var removable = params.model.removable;
+  if ( removable === null ){
+    removable = function(){
+      if (! this._model.collection ) return true;
+      if ( this.isNew() ){
+        return true;
+      } else {
+        var removeValidators  = this._model.collection._validators.remove.allow;
+        var removeDeny        = this._model.collection._validators.remove.deny;
+        if ( removeValidators.length === 0 && Meteor.isServer ) return false;
+        if ( removeValidators.length === 0 && Meteor.isClient ) return true;
+
+        var fal = _.all( removeValidators, function( val ){
+          return ! val( Meteor.userId(), this._id );
+        }.bind( this ));
+        if ( fal ) return false;
+
+        fal = _.any( removeDeny, function( val ){
+          return val( Meteor.userId(), this._id );
+        }.bind( this ));
+        if ( fal ) return false;
+      }
+
+      return true;
+    }
+  }
+
+  var editable = params.model.editable;
+  if ( editable === null ) editable = savable;
+
   Object.defineProperties( ModelInstance.prototype, {
     __name__: { value: params.__name__ },
 
@@ -79,21 +165,21 @@ ModelInstanceSuper = function( params ){
     * @method editable
     * @return Boolean
     */
-    editable: { value: params.model.editable },
+    editable: { value: editable },
 
     /**
     * Check to see if model is savable by user
     * @method savable
     * @return Boolean
     */
-    savable: { value: params.model.savable },
+    savable: { value: savable },
 
     /**
     * Check to see if model (in array) is removable by user
     * @method removable
     * @return Boolean
     */
-    removable: { value: params.model.removable },
+    removable: { value: removable },
 
     /**
     * If model is editable by user, toggle editMode

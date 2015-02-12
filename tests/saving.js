@@ -35,6 +35,20 @@ if ( Meteor.isServer ){
     this.findOne  = function( selector, options ){
       return createTestDoc();
     };
+    this._validators = {
+      insert: {
+        allow: [ function(){ return true }],
+        deny: [],
+      },
+      update: {
+        allow: [ function(){ return true }],
+        deny: [],
+      },
+      remove: {
+        allow: [ function(){ return true }],
+        deny: [],
+      }
+    };
   };
   collection.prototype = Object.create( Meteor.Collection.prototype );
 

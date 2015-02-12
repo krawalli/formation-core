@@ -51,7 +51,7 @@ Formation.Model = function( params ){
       editable = params.editable;
       break;
     default:
-      editable = function(){ return true };
+      editable = null;
       break;
   }
 
@@ -65,7 +65,7 @@ Formation.Model = function( params ){
       savable = params.savable;
       break;
     default:
-      savable = function(){ return true };
+      savable = null;
       break;
   }
 
@@ -79,7 +79,7 @@ Formation.Model = function( params ){
       removable = params.removable;
       break;
     default:
-      removable = function(){ return true };
+      removable = null;
       break;
   }
 
