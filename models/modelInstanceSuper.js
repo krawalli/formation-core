@@ -26,6 +26,12 @@ ModelInstanceSuper = function( params ){
     if ( this.isNew() ) this.editMode();
   }
 
+  var save;
+  if (! params.model.collection && typeof( params.model.save ) === 'function' )
+    save = params.model.save;
+  else
+    save = saveInstance;
+
   var savable = params.model.savable;
   if ( savable === null ){
     savable = function(){
@@ -272,36 +278,7 @@ ModelInstanceSuper = function( params ){
     * @method save
     * @return Number
     */
-    save: { value: function save( callback ){
-      this.validate();
-      if ( this.beforeSave ) this.beforeSave();
-
-      var data = this.getValue();
-
-      function saveCallback( err, res ){
-        if ( err ){
-          var errs = this._errors.get();
-          errs.push( err );
-          this._errors.set( errs );
-          console.log( err.message );
-          return;
-        }
-        if (! this.isNew() )  this.setValue( res );
-        if ( this.afterSave ) this.afterSave();
-        if ( typeof( callback ) === "function" ) callback( err, res );
-      }
-
-      if ( this.isNew() ){
-        if (! this._parent ) delete data._id;
-        else _ensureId.call( this );
-        var objectId = Meteor.call( "Formation.insert", data, this._model.collection._name, saveCallback.bind( this ));
-      } else {
-        var objectId = Meteor.call( "Formation.update", this._id, data, this._model.collection._name, saveCallback.bind( this ));
-      }
-
-      this.editMode( false );
-      return objectId;
-    }},
+    save: { value: save },
 
     /**
     * Determines if model has any retrievable value
@@ -642,4 +619,36 @@ function validateModel( item, fieldName ){
       this._errors.set( errs );
     }
   }
+}
+
+
+function saveInstance( callback ){
+  this.validate();
+  if ( this.beforeSave ) this.beforeSave();
+
+  var data = this.getValue();
+
+  function saveCallback( err, res ){
+    if ( err ){
+      var errs = this._errors.get();
+      errs.push( err );
+      this._errors.set( errs );
+      console.log( err.message );
+      return;
+    }
+    if (! this.isNew() )  this.setValue( res );
+    if ( this.afterSave ) this.afterSave();
+    if ( typeof( callback ) === "function" ) callback( err, res );
+  }
+
+  if ( this.isNew() ){
+    if (! this._parent ) delete data._id;
+    else _ensureId.call( this );
+    var objectId = Meteor.call( "Formation.insert", data, this._model.collection._name, saveCallback.bind( this ));
+  } else {
+    var objectId = Meteor.call( "Formation.update", this._id, data, this._model.collection._name, saveCallback.bind( this ));
+  }
+
+  this.editMode( false );
+  return objectId;
 }

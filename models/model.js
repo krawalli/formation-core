@@ -315,7 +315,13 @@ Formation.Model = function( params ){
 
         return instance;
       }
-    }
+    },
+
+    
+    /**
+    * On a Model with no collection and a custom save function, replace built in save
+    */
+    save: { value: typeof( params.save ) === 'function' && typeof( params.collection ) === 'undefined' ? params.save : null },
   });
 
   var model = new Model;
