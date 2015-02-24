@@ -60,6 +60,7 @@ Meteor.methods({
       instance.validate();
       if ( instance.beforeSave ) instance.beforeSave();
       _id = model.collection.insert( instance.getValue() );
+      instance._id = _id;
       if ( instance.afterSave ) instance.afterSave();
 
     } catch( err ){
