@@ -605,7 +605,11 @@ function validateArray( item, fieldName ){
 
 
 function validateModel( item, fieldName ){
-  this[ fieldName ].validate();
+  if (this[ fieldName ].validate !== undefined) {
+    this[ fieldName ].validate();
+  } else {
+    throw new Error( "Field '" + fieldName + "' should be a Formation Model, but its not!" );
+  }
 
   if ( item.unique && this._model.collection ){
     var find = {};
