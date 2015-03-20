@@ -258,3 +258,23 @@ Object.defineProperty( Formation.Validators, "URL", {
   },
   enumerable: true
 });
+
+
+// EJSON validator
+Object.defineProperty( Formation.Validators, "EJSON", {
+  value: function(){
+    return Match.Where( function( value ){
+      try {
+        if (!_.isObject(value)) {
+          value = EJSON.parse(value);
+        }
+        EJSON.stringify(value);
+      } catch( error ){
+        throw new Formation.Error( "EJSON", "notParsable", { value: value, error: error.message });
+      }
+
+      return true;
+    });
+  },
+  enumerable: true
+});

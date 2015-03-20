@@ -4,7 +4,8 @@ Formation.Settings.Messages = Formation.Settings.Messages || {};
 var replaceables = {
   'min':    /%min/ig,
   'max':    /%max/ig,
-  'value':  /%val/ig
+  'value':  /%val/ig,
+  'error':  /%error/ig
 };
 
 
@@ -54,6 +55,9 @@ var exceptions = {
   'URL': {
     'notAFullURL':      'Please include the full URL (http://...)',
     'notAURL':          "Please enter a valid URL.",
+  },
+  'EJSON': {
+    'notParsable': 'Please enter a valid JSON structure - current error is: %error.'
   }
 };
 

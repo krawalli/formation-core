@@ -28,6 +28,7 @@ Package.onUse( function( api ) {
     'date',
     'datetime',
     'email',
+    'ejson',
     'modelChoice',
     'number',
     'password',
