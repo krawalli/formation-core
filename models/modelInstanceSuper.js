@@ -419,12 +419,15 @@ function _traverseModel( withArray, withModel, withField, data ){
 }
 
 
-function initArray( item, fieldName, data ){
-  data[ fieldName ]     = data[ fieldName ] instanceof Array ? data[ fieldName ] : [];
-  this[ fieldName ]     = [];
+function initArray( item, fieldName, adata ){
+  this[ fieldName ]       = [];
+  if (! adata ||
+      ! adata[ fieldName ] ||
+      ! adata[ fieldName ] instanceof Array )
+      return;
 
-  for ( var i=0; i < data[ fieldName ].length; i++ ){
-    var arrayData = data[ fieldName ][ i ];
+  for ( var i=0; i < adata[ fieldName ].length; i++ ){
+    var arrayData = adata[ fieldName ][ i ] || {};
 
     if ( this.isNew() )
       this[ fieldName ][ i ] = new item.newInstance( arrayData );
