@@ -9,6 +9,7 @@ Formation.Fields.Number = function Field( params ){
     if (! val && val !== 0 ) val = undefined;
     return val;
   };
+  var stepSize = typeof params.stepSize === "number" ? params.stepSize : 1;
 
   Formation.Field.call( this, params );
 
@@ -21,6 +22,8 @@ Formation.Fields.Number = function Field( params ){
   Object.defineProperty( this, "instance", {
     value: Formation.FieldInstance({ field: this })
   });
+
+  Object.defineProperty( this, "stepSize", { value: stepSize } );
 };
 
 Formation.Fields.Number.prototype = Object.create( Formation.Field.prototype );
