@@ -1,7 +1,7 @@
 Package.describe({
   name: "quietcreep:formation-core",
   summary: "Core objects for Formation for Meteor",
-  version: "2.0.5_1",
+  version: "2.0.6",
   git: "http://github.com/quietcreep/formation-core",
   documentation: null,
 });
@@ -12,7 +12,7 @@ var both = [ 'client', 'server' ];
 Package.onUse( function( api ) {
 
   api.versionsFrom( 'METEOR@1.0.2.1' );
-  api.use([ 'underscore', 'check', 'reactive-var', 'tracker' ], both );
+  api.use([ 'underscore', 'check', 'reactive-var', 'tracker', 'ejson' ], both );
 
   //// settings and setup ///////////
   api.addFiles( 'settings.js', both );

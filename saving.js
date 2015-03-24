@@ -16,24 +16,25 @@ Meteor.methods({
     if (! prevInstance ) return;
     doc._id             = _id;
     var instance        = new model.instance( doc );
+
     if (! instance.savable() )
       throw new Meteor.Error( "InadequatePermission", "You do not have permission to complete this action" );
 
-    var patchedInstance = prevInstance.setValue( instance );
+    prevInstance.setValue( instance );
 
     try {
-      patchedInstance.validate();
-      if ( patchedInstance.beforeSave ) patchedInstance.beforeSave();
-      model.collection.update( _id, { '$set': patchedInstance.getValue() });
-      if ( patchedInstance.afterSave ) patchedInstance.afterSave();
+      prevInstance.validate();
+      if ( prevInstance.beforeSave ) prevInstance.beforeSave();
+      model.collection.update( _id, { '$set': prevInstance.getValue() });
+      if ( prevInstance.afterSave ) prevInstance.afterSave();
 
     } catch( err ){
-      console.log( patchedInstance.getAllErrors() );
-      console.log( patchedInstance.errors() );
+      console.log( prevInstance.getAllErrors() );
+      console.log( prevInstance.errors() );
       throw new Meteor.Error( 500, "Server Side Validation Error" );
     }
 
-    return patchedInstance.getValue();
+    return prevInstance.getValue();
   },
 
 
