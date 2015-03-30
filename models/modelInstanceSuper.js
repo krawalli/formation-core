@@ -634,7 +634,7 @@ function saveInstance( callback ){
   if ( this.beforeSave ) this.beforeSave();
 
   var data = this.getValue();
-
+  var objectId;
   function saveCallback( err, res ){
     if ( err ){
       var errs = this._errors.get();
@@ -643,17 +643,19 @@ function saveInstance( callback ){
       console.log( err.message );
       return;
     }
+    objectId = res;
     if (! this.isNew() )  this.setValue( res );
-    if ( this.afterSave ) this.afterSave();
+    //FIXME: afterSave is also triggered from saving.js #65
+    //if ( this.afterSave ) this.afterSave();
     if ( typeof( callback ) === "function" ) callback( err, res );
   }
 
   if ( this.isNew() ){
     if (! this._parent ) delete data._id;
     else _ensureId.call( this );
-    var objectId = Meteor.call( "Formation.insert", data, this._model.collection._name, saveCallback.bind( this ));
+    Meteor.call( "Formation.insert", data, this._model.collection._name, saveCallback.bind( this ));
   } else {
-    var objectId = Meteor.call( "Formation.update", this._id, data, this._model.collection._name, saveCallback.bind( this ));
+    Meteor.call( "Formation.update", this._id, data, this._model.collection._name, saveCallback.bind( this ));
   }
 
   this.editMode( false );
